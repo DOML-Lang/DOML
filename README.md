@@ -27,7 +27,7 @@ Till the website goes online I'll give a quick explanation;
 
 Effectively the heirachy looks something like this;
 `RootObject.CreateObject("Color")->Object.RunFunction("RGB", [255, 64, 128])` which is broken down into a series of byte code instructions.  Below is the bytecode representation of the above code;
-```C
+```assembly
 ; This is a comment
 initspace 3 &0
 initspace 3 &1
