@@ -1,4 +1,8 @@
 # Data Oriented Markup Language - DOML (.Net)
+> By Braedon Wooding
+> Latest Version N/A
+> *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
+
 This is the Specification document for DOML (Data Oriented Markup Language), which is a 'new' markup language that takes a different approach then most. It enacts to simulate a call-stack rather than simulate data structures, this allows it to represent a constructor like look rather than the usual {...} mess.
 
 ## A quick overview
@@ -25,7 +29,7 @@ Till the website goes online I'll give a quick explanation;
 ;             .Name            = "Copy"
 ```
 
-Effectively the heirachy looks something like this;
+Effectively the heirachy looks something like this (outdated slightly update it);
 `RootObject.CreateObject("Color")->Object.RunFunction("RGB", [255, 64, 128])` which is broken down into a series of byte code instructions.  Below is the bytecode representation of the above code;
 ```assembly
 ; This is a comment
@@ -75,6 +79,11 @@ Effectively the 'compiler' will convert your DOML markup to this set of commands
 
 Another thing to note is that while in the bytecode I used things like `System.Color`, `RGB`, `RGB.Normalised` and so on in the actual implementation it will use an index value like `#0`/`0`/`*0` the exact prefix (if any) will be determined later, and it'll map to the implementation.
 
+## Quick Spec Details
+- DOML is case sensitive
+- DOML must be a valid UTF-8 encoded unicode document (though I don't see why you can't support other formats)
+- DOML refers to the initial source code not to the produced bytecode, parsers need to support ONLY DOML and don't need to support parsing bytecode, though due to its simplicity it may be easy to support.
+
 ## Types
 This will be covered in more detail elsewhere but here are all the types
 
@@ -87,4 +96,56 @@ This will be covered in more detail elsewhere but here are all the types
 | String        | "This contains a \" escaped quote"    | "...", you can escape `"` with `\`                 |
 | Char          | 'C', '5'                              | Maps to a character (Ambigious needs format        |
 | Boolean       | true, false                           | The boolean values                                 |
-You can also use underscores in any number (integers, unsigned, floats, and doubles).
+
+## Syntax
+I'll cover this quickly here you can view an indepth either under [indepth syntax](syntax.md) or at by viewing the [abnf](doml.abnf).
+
+#### Comments
+C-Styled comments either `//` or `/*` nesting is allowed for both;
+```
+// This is a comment
+/* This is a block and /* this is a nested block */ */
+```
+
+#### Structure
+The structure is simple you have two types of 'calls' you have either 'creation calls' or 'set calls' they look like either;
+```C
+@ X = Y.Z
+// OR
+; X.A = B, C, D
+```
+Where B/C/D can either be a creation call variable (like X in this instance) can be a lookup of any root object (like Y in this instance, though you couldn't just use `Y` you would have to do something like `Y.MyValue` since 'Y' refers more to a collection of functions then an object).  B/C/D can also be any value (listed in the type table) they can go forever, you have no limits on how many values you set.
+
+You can shorten the structure a little using the `...` operator such as;
+```C
+@ X   = Y.Z ...
+;     .A = B, C, D
+```
+Note that the second X wasn't required, this is because the `...` means just presume that every thing that starts with `.` is referring to `X` UNTIL you meet another `@` (regardless if that `@` has a `...`) you can always just refer to other objects like;
+```C
+@ B   = W.V
+@ X   = Y.Z ...
+;     .A = B, C, D
+;    B.E = F, G, H
+```
+
+#### That's it!
+> Wait what?
+Yes it may seem weird but the syntax is THAT simple its meant to be!  It will probably expand a little, like I would like the choice to have an inline setter so you could do something like;
+```C
+@ point = PointHandler.NewPoint ...
+;       .{ x = 2; y = 3; z = 9 }
+```
+But I guess you could always just do;
+```C
+@ point = PointHandler.NewPoint ...
+;       .x = 2; .y = 3; .z = 9
+```
+But eh the other one looks a little cleaner, regardless we will see.
+
+#### But no arrays...?
+There are still arrays remember `B, C, D` you passing multiple values to `.A` your effectively passing a heterogeneous array (allows any type), at its core C arrays are just this (well that and they are homogeneous or the same type) modern arrays often tack on a little length variable and I guess you could always do that yourself, and the argument may be that we should handle that, but I'm still not convinced on that front since the ONLY case where that would be useful would be when you are passing multiple values to a function and you want one of the values to be an array and the others to not be an array.  Otherwise you can always just either keep popping till you get a 'false' (run out of elements) or be a good person and do a for loop using a variable that says how big the 'stack' is.
+
+Note: this is where I should say that all the DOML implementations by me will have the same API (with only minor differences) and I suggest if other people make new implementations they follow the same API guidelines, though I'm not going to enforce that so the whole array thing is more of a parser implemented thing then anything.
+
+Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing)
