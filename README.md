@@ -20,8 +20,7 @@ Till the website goes online I'll give a quick explanation;
 ;             .Name            = "OtherName
 
 /* Multi Line Comment Blocks are great
-  /* Especially when nesting is allowed */
-  
+  // Note: nesting is allowed its just till I make a github syntax and it gets accepted I won't include it in examples since I'll use the C one in the mean time and that doesn't allow nesting multi line comment blocks
   Anyways lets go and copy another previous one by just copying over the values.
 */
 @ Copy        = System.Color ...
