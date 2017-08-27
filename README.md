@@ -1,6 +1,8 @@
 # Data Oriented Markup Language - DOML (.Net)
 > By Braedon Wooding
+
 > Latest Version N/A
+
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
 This is the Specification document for DOML (Data Oriented Markup Language), which is a 'new' markup language that takes a different approach then most. It enacts to simulate a call-stack rather than simulate data structures, this allows it to represent a constructor like look rather than the usual {...} mess.
