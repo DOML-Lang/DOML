@@ -1,0 +1,80 @@
+;; WARNING: This grammar is W.I.P. and should not be considered as final until stated as final
+
+;; This is an attempt to define DOML in ABNF according to the grammar defined
+;; in RFC 5234 (http://www.ietf.org/rfc/rfc5234.txt).  And later in RFC 7405 (https://tools.ietf.org/html/rfc7405).
+
+;; Misc
+
+newline = ( %x0A /          ; LF
+            %x0D.0A )       ; CRLF
+            
+ws = *wschar
+
+wschar = ( %x20 /           ; Space
+           %x09 )           ; Horizontal tab
+           
+minus  = "-"                ; -
+plus = "+"                  ; +
+
+DIGIT = %x30-39             ; 0 - 9
+
+OCT = %x30-37         ; 0 - 7
+
+HEX = DIGIT / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f" ; 0 - 9 or A-F (a-f also)
+
+BINARY = %x30-31      ; 0 or 1
+
+otherBase = "0" ((%i"x" *HEX) / (%i"b" *BINARY) / (%i"o" OCT)) ; 0x or 0b or 0o (case insensitive)
+
+integerEndings = ( %i"u" (%i"s" / %i"l") ) / 
+                 ( %i"s" / %i"l" ) / 
+                 (( %i"s" / %i"l") %i"u" ) / 
+
+floatEndings = %i"f" / %i"d"
+
+quote = %x22            ; "
+
+backslash = %x5C        ; \
+
+forwardslash = %x2F   ; /
+
+singlequote = %x27      ; '
+
+identifier = ("_" / ALPHA) *("_" / ALPHA / DIGIT)
+
+creationIdentifier = identifier "." identifier
+
+extendedIdentifier = ("_" / ALPHA) *("_" / ALPHA / "[" / "]" / "(" / ")" / "." / "<" / ">" / "{" / "}")
+
+comment = (forwardslash forwardslash newline) / (forwardslash "*" ANY "*" forwardslash) ;; // ... or /* Text */
+
+wsComment = ws / comment
+
+;; Note for simplicity the following rule is defined as being ANY text including unicode
+text = ANY
+
+;; Values
+integer = [ minus / plus ] ( *( DIGIT ) / ( otherBase ) ) [ integerEndings ]
+
+frac = "." 1*DIGIT
+exp = "e" [ minus / plus ] *DIGIT
+float = [ minus / plus ] *( DIGIT ) ( frac / ( frac exp ) / exp ) [ floatEndings ]     
+           
+string = quote *(text / (backslash quote)) quote ;; "ANY" (including the opportunity to escape quotes)
+char = singlequote *(text / (backslash singlequote)) singlequote ;; 'ANY' (including the opportunity to escape quotes)
+
+boolean = %s"true" / %s"false" ;; true or false
+lookup = identifier [ "." extendedIdentifier ]
+
+value = integer / float / string / char / boolean / lookup
+values = value *( "," value )
+
+;; Intermediates
+creation = "@" wsComment identifier wsComment "=" wsComment creationIdentifier wsComment [ "..." ] [ newline ]
+set = ";" wsComment [ identifier ] "." extendedIdentifier wsComment "=" wsComment values [ newline ]
+
+;; Top Level
+
+doml = 1*expression ;; 1 or more expressions
+
+expression = creation / set / (comment [ newline ])
