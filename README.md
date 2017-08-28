@@ -5,10 +5,15 @@
 
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
-This is the Specification document for DOML (Data Oriented Markup Language), which is a 'new' markup language that takes a different approach then most. It enacts to simulate a call-stack rather than simulate data structures, this allows it to represent a constructor like look rather than the usual {...} mess.
+This is the Specification document for DOML (Data Oriented Markup Language), which is a 'new' markup language that takes a different approach then most. It enacts to simulate a call-stack rather than simulate data structures, this allows it to represent a constructor like look rather than the usual {...} mess.  Its simplicity can't be ignored, the entire ABNF is 80 lines including comments and nice indentation which is insanely small (especially considering TOML another 'minimalistic language' has a 219 line grammar which around ~2.74x larger)!
+
+## Why DOML?
+DOML was born out of a need, a need to have a markup language that stops functioning like just a text file and starts functioning like an integral part of the program, it was born out of an annoyance at writing code of loading a file in and either having to manually de-serialize/serialize or having to fiddle with an automatic serializer, and never knowing if the solution had a small typo in it.  I finally 'cracked' and brought out the playground project and whiteboard when I saw someone building an entire application whose whole purpose was to just take data and build a JSON object, since it was easier then writing 50 billion `"` and braces, and was validated (unlike every other markup language on the planet).  So I sat down at my desk and crafted DOML, a solution which I aimed to be efficient and to be practical to allow you to do whatever you need without much intrusion.  Hopefully I'm correct.  Further more DOML is simple, the first parser was < 300 lines, and today its < 2000 (due to the addition of bytecode and security), the entire ABNF fits in 80 lines and there are only TWO main rules (excluding comments) that is `creation` or `set` which either perform a constructor or set a variable within a variable created in a creation call.  It has 0 keywords and only 5 operators (`...`, `=`, `,`, `@`, `;`)!  Operators like `.` are part of the name, and other operators like `(`, `)`, `{`, `[`... (effectively any open/close brace/bracket/arrow/...) are replaced with `.` so the following are all the SAME call (simplicity mhmmmm); `.RGB(Normalised)`, `.RGB[Normalised]`, `.RGB<Normalised>` are all just `.RGB.Normalised`!
+
+## Objectives
+Efficient data serialization.  Not only be fast, but also the avoidance of wasting memory.  Removal of the separation between markup languages and your project, the burning of the obscure and ugly bridge to join the two islands together using a nice steel well constructed bridge that is easy to traverse and actually supports vehicles (maybe I went too far on this analogy?)...  Further more it aims to be simple, the avoidance of 'arrays' and complex structures for implicit collections is key!
 
 ## A quick overview
-Till the website goes online I'll give a quick explanation;
 ```C
 // This is a comment
 @ Test        = System.Color ... // System is just a random name represents a 'root object', System.Color represents a 'object'
@@ -22,7 +27,7 @@ Till the website goes online I'll give a quick explanation;
 ;             .Name            = "OtherName
 
 /* Multi Line Comment Blocks are great
-  // Note: nesting is allowed its just till I make a github syntax and it gets accepted I won't include it in examples since I'll use the C one in the mean time and that doesn't allow nesting multi line comment blocks
+  // Note: nesting is allowed its just till I make a github syntax and it gets accepted I won't include it in examples, since I'll use the C one in the meantime and that doesn't allow nesting multi line comment blocks
   Anyways lets go and copy another previous one by just copying over the values.
 */
 @ Copy        = System.Color ...
@@ -149,4 +154,32 @@ There are still arrays remember `B, C, D` you passing multiple values to `.A` yo
 
 Note: this is where I should say that all the DOML implementations by me will have the same API (with only minor differences) and I suggest if other people make new implementations they follow the same API guidelines, though I'm not going to enforce that so the whole array thing is more of a parser implemented thing then anything.
 
-Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing)
+## Comparison with other formats
+Firstly I'll list the problems with other formats; XML has always been hard to read, hard to write (though I would claim its still easier to write then JSON by quite a landslide) and especially hard to parse and its spec is a complete mess.  JSON is easy to parse, but still suffers from being annoyingly verbose.  YAML is much improved in this manner, but however due to its tight bindings to JSON (all JSON works in YAML parsers) it stretches out its SPEC even further (and YAML's spec is sooo large that no parser is capable of supporting it all), and even further more its reliance on JSON hinders whitespace meaning that if you choose indentation you need to like Python keep everything indented right which means that its not compact enough for web use (and JSON isn't either though its often used due to its native compatibility with Javascript).
+
+A few others;
+- INI is old, and suffers from a lot (though I quite like it for its simplicity)
+
+So what one is like DOML the most?  Well I guess I would say TOML?  TOML is a great step forward in the advancement of markup languages though I still feel it suffers from trying to create a new thing from what already is here rather than create a new thing from the core fundamentals of what it should be (which DOML was created out of), this is why I can't really compare it greatly with other formats...  Because it was built to be a different sort of tool, a different sort of markup language it accomplishes the same goal but in a way that I would *claim* has never been done before (succesfully at least).  This isn't just another markup language (damn should have included a YAML pun), but rather I'm sure some will claim isn't really even a 'markup language', and shares more similiarity with scripting languages then actual markup languages.
+
+Though I would claim differently, the clear difference between a scripting language and a programming language is *how* you use it and in what context, and I would further claim that the biggest difference between a markup language and a scripting language is how you *can* you use (or rather *should*), since while DOML is 'turing complete' (though you would have to add functions like math and basic drawing for anyone to be like 'yeh now its turing complete') it purposefully limits actions like math and so on, since its built to represent data thus its a data oriented language.  Every action you perform is around the manipulation of data (again the clear distinction is that the 'purpose' of the language is to create data the purpose of other languages is to creation applications and while both may 'manipulate data' its clear to see what is different).
+
+So to 'wrap up', DOML is more than just a simplistic alternative, its a 'scripting language' with the whole goal of creating data, not with using it!  Thus I would claim its a markup-language due to the similar goals and the restrictions placed on it, though I'm sure others will disagree.
+
+## Get Involved!
+Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing, OR if you are adding your implementation / project to the list all these don't require issues of course).  Further more I'll open up a discord chat somewhat soon (and maybe a mailing list, though nowadays they seem a little archaic).
+
+## Projects using DOML
+- None yet, if you know of one please send a PR adding to this list!
+
+## Implementations of DOML
+If you have an implementation, send a pull request adding to this list. Please note the version tag that your parser supports in your Readme.
+
+## v0.1 Compatible
+
+## In Progress
+- [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
+- [C++](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-Cxx)
+
+## Editor Support
+- None yet, but VIM/Notepad++/EMACS/Sublime Text/VS Code are all in development
