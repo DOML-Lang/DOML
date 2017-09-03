@@ -201,5 +201,34 @@ The Architecture of IR has been standardized just to maintain consistency.
 The following are all the required commands, as stated previously you **could** add more but should refrain from it since that lends itself to incompatibility.  All parsers **need** to support the following.
 > Note: All the pushing commands are detailed in depth under the [set](#set-assignments) section so I won't list them here
 - `nop` does explicitly nothing
+  - IR: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
 - `comment` same as nop but when emitted will emit the comment (aka it maintains user comments)
-- WIP
+  - IR: `; <User Comment>` i.e. `; Create a new color`
+- `panic` panics (produces an error) if top value matches the parameter supplied
+  - IR: `panic <any>` i.e. `panic true` or `panic 100`
+- `makespace` reserves space in stack
+  - The parameter represents the new size not the difference
+  - Objects aren't carried across so effectively a wipe
+  - IR: `makespace <int32>` i.e. `makespace 2`
+- `makereg` reserves space in object registers
+  - The parameter represents the new size not the difference
+  - Objects aren't carried across so effectively a wipe
+  - IR: `makereg <int32>` i.e. `makereg 2`
+- `set` runs the set function
+  - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
+    - the functionality of having the same name for set/get/new and for different types **needs** to exist.
+  - IR: `set <Root.Creation::SetFunction>` i.e. `set System.Color::Color.Hex`
+- `copy` copies top value x times
+  - IR: `copy <int32>` i.e. `copy 4` (which copies top value 4 times)
+- `clear` clears all values
+  - Deprecated
+- `clearreg` clears all registers
+  - Deprecated
+- `regobj` registers top object to index given
+  - performs a pop then registers that object to index given
+  - IR: `regobj <int32>` i.e. `regobj 2` (registers top object to register 2)
+- `unregobj` unregisters object at index
+  - set it to 'null' basically
+  - IR: `unregobj <int32>` i.e. `unregobj 2` (registers top object to register 2)
+- `call` performs a function call on the parameter
+  - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
