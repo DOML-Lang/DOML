@@ -61,12 +61,12 @@ Both DOML and IR share the same type system, all the following types **must** be
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
 - Floating Point
   - Single Precision 32 bits (IEEE 754) by default
-  - 16 bit (1 byte), 64 bit (2 bytes), 80 bit (8 bytes), and 128 bit (16 bytes) variants through the H/D/E/Q postfixes (case insensitive)
+  - 16 bit (1 byte), 64 bit (2 bytes), 80 bit (8 bytes), and 128 bit (16 bytes) variants through the FH/FD/FE/FQ postfixes (case insensitive)
     - Standing for Half, Double, Extended, and Quad
 - Decimals
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
   - Single Precision 32 bit by default
-  - 64 bit (8 bytes), 128 bit (16 bytes) variants through the D/Q postfixes (case insensitive)
+  - 64 bit (8 bytes), 128 bit (16 bytes) variants through the D/DQ postfixes (case insensitive)
     - Standing for Double, and Quad
 - String
   - Begins with `"` ends with `"`
