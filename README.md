@@ -102,6 +102,7 @@ This will be covered in more detail elsewhere but here are all the types
 | String        | "This contains a \" escaped quote"    | "...", you can escape `"` with `\`                 |
 | Char          | 'C', '5'                              | Maps to a character (Ambigious needs format        |
 | Boolean       | true, false                           | The boolean values                                 |
+| Object        | Test, X, MyColor                      | Refers to a previously defined object              |
 
 ## Syntax
 I'll cover this quickly here you can view an indepth either under [indepth syntax](syntax.md) or at by viewing the [abnf](doml.abnf).
@@ -116,11 +117,11 @@ C-Styled comments either `//` or `/*` nesting is allowed for both;
 #### Structure
 The structure is simple you have two types of 'calls' you have either 'creation calls' or 'set calls' they look like either;
 ```C
-@ X = Y.Z
-// OR
-; X.A = B, C, D
+// Create X
+@ X   = Y.Z
+;    X.A = B, C, D
 ```
-Where B/C/D can either be a creation call variable (like X in this instance) can be a lookup of any root object (like Y in this instance, though you couldn't just use `Y` you would have to do something like `Y.MyValue` since 'Y' refers more to a collection of functions then an object).  B/C/D can also be any value (listed in the type table) they can go forever, you have no limits on how many values you set.
+Where `B`, `C`, `D` can be anything from the above type table, they can also refer to a 'getter' like `System.Version`.
 
 You can shorten the structure a little using the `...` operator such as;
 ```C
@@ -137,20 +138,10 @@ Note that the second X wasn't required, this is because the `...` means just pre
 
 #### That's it!
 > Wait what?
-Yes it may seem weird but the syntax is THAT simple its meant to be!  It will probably expand a little, like I would like the choice to have an inline setter so you could do something like;
-```C
-@ point = PointHandler.NewPoint ...
-;       .{ x = 2; y = 3; z = 9 }
-```
-But I guess you could always just do;
-```C
-@ point = PointHandler.NewPoint ...
-;       .x = 2; .y = 3; .z = 9
-```
-But eh the other one looks a little cleaner, regardless we will see.
+Yes it may seem weird but the syntax is THAT simple!  It will probably expand a little but I want to refrain from heavy changes that break a lot of things.
 
 #### But no arrays...?
-There are still arrays remember `B, C, D` you passing multiple values to `.A` your effectively passing a heterogeneous array (allows any type), at its core C arrays are just this (well that and they are homogeneous or the same type) modern arrays often tack on a little length variable and I guess you could always do that yourself, and the argument may be that we should handle that, but I'm still not convinced on that front since the ONLY case where that would be useful would be when you are passing multiple values to a function and you want one of the values to be an array and the others to not be an array.  Otherwise you can always just either keep popping till you get a 'false' (run out of elements) or be a good person and do a for loop using a variable that says how big the 'stack' is.
+There are still arrays remember `B, C, D` you passing multiple values to `.A` your effectively passing a heterogeneous array (allows any type), at its core arrays are just this (well that and they are homogeneous or the same type) modern arrays often tack on a little length variable and I guess you could always do that yourself, and the argument may be that we should handle that, but I'm still not convinced on that front since the ONLY case where that would be useful would be when you are passing multiple values to a function and you want one of the values to be an array and the others to not be an array.  Otherwise you can always just either keep popping till you get a 'false' (run out of elements) or be a good person and do a for loop using a variable that says how big the 'stack' is.
 
 Note: this is where I should say that all the DOML implementations by me will have the same API (with only minor differences) and I suggest if other people make new implementations they follow the same API guidelines, though I'm not going to enforce that so the whole array thing is more of a parser implemented thing then anything.
 
