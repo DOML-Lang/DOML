@@ -24,6 +24,12 @@ The following are key words and their definitions;
   - [Whitespace](#whitespace)
   - [Architecture](#architecture)
   - [Required Commands](#required-commands)
+- [Interfacing DOML](#interfacing-doml)
+  - [Static vs Reflection Bindings](#static-vs-reflection-bindings)
+  - [Constructors](#constructors)
+  - [Setters](#setters)
+  - [Getters](#getters)
+  - [Sizeof](#sizeof)
 
 ## File Format
 The file ending **must** be `.doml` for *DOML* files and `.odoml` for the IR (similarity to `.o` files).  Furthermore, they **should** be encoded with standard UTF-8, though other parsers **could** support other formats.
@@ -35,7 +41,6 @@ The file ending **must** be `.doml` for *DOML* files and `.odoml` for the IR (si
 - *IR*
   - **Must** be case sensitive
   - **Must** be whitespace sensitive
-    - More on this under syntax
 
 ## Syntax
 The following details relate to the syntax.
@@ -216,13 +221,19 @@ The following are all the required commands, as stated previously you **could** 
   - IR: `makereg <int32>` i.e. `makereg 2`
 - `checkspace` checks if space equals the sizeof a getter
   - The parameter represents a function
-  - A parser **could** just do this during parsing and avoid a checkspace call
-  - Though they should still provide the lines but just comment them out
-  - IR: `checkspace <Root.Creation::SetFunction>` i.e. `checkspace System.Color::RGB`
+  - A parser **could** just do this during parsing and avoid checkspace calls
+    - Though they should still provide the lines but just comment them out
+  - IR: `checkspace <Root.Creation::GetFunction>` i.e. `checkspace System.Color::RGB`
+- `checkset` checks if stackptr (the current amount of parameters) equals the sizeof a setter
+  - The parameter represents a function
+  - A parser **could** just do this during parsing and avoid checkset calls
+    - Though they should still provide the lines but just comment them out
+    - This could be beneficial since you could also check types
+  - IR: `checkset <Root.Creation::SetFunction>` i.e. `checkset System.Color::RGB.Hex`
 - `set` runs the set function
   - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
-  - IR: `set <Root.Creation::SetFunction>` i.e. `set System.Color::Color.Hex`
+  - IR: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
 - `copy` copies top value x times
   - IR: `copy <int32>` i.e. `copy 4` (which copies top value 4 times)
 - `clear` clears all values
@@ -237,3 +248,21 @@ The following are all the required commands, as stated previously you **could** 
   - IR: `unregobj <int32>` i.e. `unregobj 2` (registers top object to register 2)
 - `call` performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
+
+## Interfacing with DOML
+There are a few ways to interface with DOML, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them). 
+
+#### Static vs Reflection Bindings
+Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often 20x slower).
+
+#### Constructors
+A constructor call is expected to push a single object, the one the user wanted.  It could be a 'new' one or could refer to an already created instance.  This means that objects require an empty constructor to then later be initialised.  This is utilised in the `new` opcode.
+
+#### Setters
+A set call is expected to push *no* objects, and pull one object for every expected parameter and *one* object for the object to call the set on.  A type is passed through the `...::` (i.e. in `System.Color::` the type is `System.Color`).  This is utilised in the `set` opcode.
+
+#### Getters
+A getter is expected to push objects, and pull only *one* object (for the object to get from). A type is passed through the `...::` (i.e. in `System.Color::` the type is `System.Color`).  This is utilised in the `get` opcode.
+
+#### Sizeof
+Both getters and setters have a sizeof operation (could be a string to int map for example) that refers to the *maximum* amount of objects they push or pull respectively, further note: that type checking **could** be added at compile time (simple checking of opcodes, I would argue).  This is utilised in the `checkset <Root.Creation::SetFunction>` and `checkspace <Root.Creation::GetFunction>` opcodes respectively.
