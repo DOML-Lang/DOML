@@ -214,6 +214,11 @@ The following are all the required commands, as stated previously you **could** 
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - IR: `makereg <int32>` i.e. `makereg 2`
+- `checkspace` checks if space equals the sizeof a getter
+  - The parameter represents a function
+  - A parser **could** just do this during parsing and avoid a checkspace call
+  - Though they should still provide the lines but just comment them out
+  - IR: `checkspace <Root.Creation::SetFunction>` i.e. `checkspace System.Color::RGB`
 - `set` runs the set function
   - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
