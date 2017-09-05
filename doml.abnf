@@ -26,12 +26,6 @@ BINARY = %x30-31      ; 0 or 1
 
 otherBase = "0" ((%i"x" *HEX) / (%i"b" *BINARY) / (%i"o" OCT)) ; 0x or 0b or 0o (case insensitive)
 
-integerEndings = ( %i"u" (%i"s" / %i"l") ) / 
-                 ( %i"s" / %i"l" ) / 
-                 (( %i"s" / %i"l") %i"u" ) / 
-
-floatEndings = %i"f" / %i"d"
-
 quote = %x22            ; "
 
 backslash = %x5C        ; \
@@ -54,11 +48,11 @@ wsComment = ws / comment
 text = ANY
 
 ;; Values
-integer = [ minus / plus ] ( *( DIGIT ) / ( otherBase ) ) [ integerEndings ]
+integer = [ minus / plus ] ( *( DIGIT ) / ( otherBase ) )
 
 frac = "." 1*DIGIT
 exp = "e" [ minus / plus ] *DIGIT
-float = [ minus / plus ] *( DIGIT ) ( frac / ( frac exp ) / exp ) [ floatEndings ]     
+float = [ minus / plus ] *( DIGIT ) ( frac / ( frac exp ) / exp ) 
            
 string = quote *(text / (backslash quote)) quote ;; "ANY" (including the opportunity to escape quotes)
 char = singlequote *(text / (backslash singlequote)) singlequote ;; 'ANY' (including the opportunity to escape quotes)
