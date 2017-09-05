@@ -41,7 +41,6 @@ Below is the IR representation of the above code;
 ;           This is a comment             ; USER COMMENT
 ; Setup Space
 makespace   4                             ; Makes sure the stack supports 4 objects at a time
-checkspace  System.Color::RGB             ; It calls a sizeof function and makes sure that the size will fit
 makereg     4                             ; Makes sure threre are 4 registers
 ; Test.RGB
 new         System.Color                  ; Creates a new object from System.Color
@@ -51,9 +50,6 @@ push32i     64                            ; Pushes 64
 push32i     128                           ; Pushes 128
 pushobj     0                             ; Pushes object from register 0
 set         System.Color::RGB             ; Call RGB on System.Color
-; Check if room for next parameters
-compsize    0                             ; If the current size is <= 0 push true else false
-panic       false                         ; Panic if top is false
 ; TheSame.RGB.Normalised
 new         System.Color                  ; Creates a new object from System.Color
 regobj      1                             ; Registers top object to register 1
@@ -62,25 +58,16 @@ push32f     0.25                          ; Pushes 0.25f
 push32f     0.5                           ; Pushes 0.5f
 pushobj     1                             ; Pushes object from register 1
 set         System.Color::RGB.Normalised  ; Call RGB.Normalised on System.Color
-; Check if room for next parameters
-compsize    2                             ; If the current size is <= 2 push true else false
-panic       false                         ; Panic if top is false
 ; AgainSame.RGB.Hex
 new         System.Color                  ; Creates a new object from System.Color
 regobj      2                             ; Registers top object to register 2
 push32i     16728192                      ; Pushes 16728192
 pushobj     2                             ; Pushes object from register 2
 set         System.Color::RGB.Hex         ; Call RGB.Hex on System.Color
-; Check if room for next parameters
-compsize    2                             ; If the current size is <= 2 push true else false
-panic       false                         ; Panic if top is false
 ; AgainSame.Name
 pushstr     "OtherName"                   ; Pushes "OtherName"
 pushobj     2                             ; Pushes object from register 2
 set         System.Color::Name            ; Call Name on System.Color
-; Check if room for next parameters
-compsize    0                             ; If the current size is <= 0 push true else false
-panic       false                         ; Panic if top is false
 ; Copy.RGB
 new         System.Color                  ; Creates a new object from System.Color
 regobj      3                             ; Registers top object to register 3
@@ -88,15 +75,10 @@ pushobj     0                             ; Pushes object from register 0
 call        System.Color::RGB             ; Gets RGB of System.Color
 pushobj     3                             ; Pushes object from register 3
 set         System.Color::RGB             ; Sets RGB of System.Color
-; Check if room for next parameters
-compsize    2                             ; If the current size is <= 2 push true else false
-panic       false                         ; Panic if top is false
 ; Copy.Name
 pushstr     "Copy"                        ; Pushes "Copy"
 pushobj     3                             ; Pushes object from register 2
 set         System.Color::Name            ; Call Name on System.Color
-; Cleanup
-cleanup     true                          ; Cleanup and quit
 ```
 The use of `;` as a comment is purely just due to its comparison to assembly, I haven't actually decided on whether or not comments will 1) be allowed and 2) have the character `;` or `//` or even `#` though there will be no block comments and as you can see above the block comment is converted into a list of comments.  Comments will be reserved as you can see if they are allowed and extra ones can be toggled to display exactly what is occuring (incase one has to debug).
 
@@ -114,17 +96,16 @@ This will be covered in more detail elsewhere but here are all the types
 
 | Type          | Example Values                        | Details (all suffixes are case insensitive)        |
 | ------------- | ------------------------------------- | -------------------------------------------------- |
-| Integer       | 12, -40, +2, 40L, 40s, 01010b, 0x40FF | Add s/l for short/long  b for binary, 0x for hex   |
-| Unsigned      | 40u, -40uL, 80Su                      | Add u for unsigned                                 |
-| Float         | 10.0009, -0.05f, 5e+22, 1e6, -2.54E-2 | E/optional f for exponent/float (needs format)     |
-| Double        | 10.5d, 20D, 5e+22d, 1e6d, -2.54E-2d   | E/required d for exponent/double (needs format)    |
+| Integer       | 12, -40, +2, 01010b, 0x40FF, 0o42310  | 0b for binary, 0x for hex, 0o for octal            |
+| Double        | 10.5, 20, 5e+22, 1e6, -2.54E-2        | E for exponent                                     |
+| Decimals      | $40, $99.05, $-4e+22                  | Can use E for exponent and '$' refers to decimal   |
 | String        | "This contains a \" escaped quote"    | "...", you can escape `"` with `\`                 |
-| Char          | 'C', '5'                              | Maps to a character (Ambigious needs format        |
+| Char          | 'C', '5'                              | Maps to a character                                |
 | Boolean       | true, false                           | The boolean values                                 |
 | Object        | Test, X, MyColor                      | Refers to a previously defined object              |
 
 ## Syntax
-I'll cover this quickly here you can view an indepth either under [indepth syntax](syntax.md) or at by viewing the [abnf](doml.abnf).
+I'll cover this quickly here you can view an indepth either under [indepth syntax](doml_formal_spec.md) or at by viewing the [abnf](doml.abnf).
 
 #### Comments
 C-Styled comments either `//` or `/*` nesting is allowed for both;
