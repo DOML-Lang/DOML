@@ -59,20 +59,15 @@ The following comment **must** be supported for all *IR* code;
 ### Types
 Both DOML and IR share the same type system, all the following types **must** be implemented.
 - Integers
-  - signed 32 bit (4 bytes) by default
-  - 8 bit (1 byte), 16 bit (2 bytes) and 64 bit (8 bytes) variants through the B/S/L postfixes (case insensitive)
-    - Standing for Byte, Short, and Long
-  - By adding a U postfix (case insensitive) you can get unsigned integers (note you can add both a u postfix and the above size postfixes, in any order but they have to go after all digits)
+  - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
 - Floating Point
-  - Single Precision 32 bits (IEEE 754) by default
-  - 16 bit (1 byte), 64 bit (2 bytes), 80 bit (8 bytes), and 128 bit (16 bytes) variants through the FH/FD/FE/FQ postfixes (case insensitive)
-    - Standing for Half, Double, Extended, and Quad
+  - Double Precision 64 bits (8 bytes), by default
+  - IEEE 754
 - Decimals
+  - `$` prefix
+  - Double Precision 64 bit (8 bytes) by default.
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
-  - Single Precision 32 bit by default
-  - 64 bit (8 bytes), 128 bit (16 bytes) variants through the D/DQ postfixes (case insensitive)
-    - Standing for Double, and Quad
 - String
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
@@ -113,36 +108,21 @@ The `;` signifies that it is a setting assignment (you are setting a variable of
 Every set assignment should form the following IR output;
 - First, every parameter is pushed
 ```assembly
-push32i 16728192
+pushint 16728192
 pushstr "Name"
 ; And so on
 ```
 The following commands are available for using;
-- `push8i`/`push16i`/`push32i`/`push64i` all push signed integer values of bit length 8/16/32/64 (or byte length 1/2/4/8)
-- `push8u`/`push16u`/`push32u`/`push64u` all push unsigned integer values of bit length 8/16/32/64 (or byte length 1/2/4/8)
+- `pushint` pushes integer value of 64 bit (8 bytes)
 - `pushobj` pushes the object at the register ID equal to the parameter
-- `push16f`/`push32f`/`push64f`/`push80f`/`push128f` all push floating point values of bit length 16/32/64/80/128 (or byte length 2/4/8/10/16
+- `pushnum` pushes floating point value of 64 bit (8 bytes)
   - IEEE754 format
-- `push32d`/`push64d`/`push128d` all push decimal values of bit length 32/64/128 (or byte length 4/8/16)
+- `pushdec` pushes decimal value of 64 bit (8 bytes)
   - Decimal Precision
 - `pushstr`/`pushchar` pushes a string or character
   - Unicode Support
 - `pushbool` pushes a boolean value
-- `push` pushes whatever it can 'see' (since you can't define the difference between floating points/decimals and between both signed/unsigned integers it'll push the default; that being 32 bit for unsigned/signed integers, floating points and 64 bits for decimals).  For booleans, strings, and characters it'll work properly and as long as you aren't 'emitting' the bytecode then you **could** use it also since the actual DOML representation has prefixes and if you store the values in an `object` (like C# Object) then it'll retain that information.
-
-The following commands from the above list **need** to be implemented (implemented defined as being native types such as `Int32` in C#, all types **need** to have some implementation but it can be through something lie up-casting i.e. treating a `push8i` as the same as `push16i` but just checking the ranges);
-- `push16i`/`push32i`/`push64i`/`push16u`/`push32u`/`push64u`
-- `push32f`/`push64f`
-- `push64d`/`push128d`
-- `pushstr`/`pushchar`
-- `pushbool`
-- `pushobj`
-- Note: if you can't implement one of these solutions due to the lack of native support and not wanting to involve external libraries then a note in the readme will suffice for you to implement a solution akin to upcasting or similar.
-
-The following **should** some kind of implementation but it doesn't have to be native;
-- `push32d`/`push16f`/`push80f`/`push8i`/`push8u`/`push128f`
-- Note: If for some reason you can't implement the solution without an external library then you should at-least provide DLL imports (or whatever) for a library that adds this functionality then either comment it out (or use `#if`) so that a user could easily enable the functionality.  Furthermore since most users will want the code to work as a DLL / similar it would be a nice solution to use ways that don't mean you have to recompile it (either use `#if` with something like C# or use managed C++ perhaps or whatever), again it's up to you and the above types *only* **should** be implemented to meet all the specs.
-- More types **could** be introduced though you should refrain from adding extra IR commands since those reduce your compatibility
+- `push` pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push character/string (depending if its single/double) if its 'true/false' it'll push bool.  So it'll never push object or decimal.
 
 Regardless after all values are pushed then the object is pushed and the set function is called.
 ```assembly
@@ -153,32 +133,7 @@ The index **should** refer to the order of colours produced but in actual fact i
 
 #### Embedding IR
 Embedding IR **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).
-
-An example for embedding IR is;
-```c
-@ MyColor = System.Color
-@ IRBlock = System.IRBlock ...
-;         .push32i  = 59
-;         .pusho    = 0
-;         .set      = "Color.Hex"
-```
-This will become the following, you **could** always simplify it and just translate the instructions one by one.
-```assembly
-new     System.Color
-regobj  0
-new     System.IRBlock
-regobj  1
-push32i 59
-pushobj 1
-set     push32i
-push32i 0
-pushobj 1
-set     pusho
-pushstr "Color.Hex"
-pushobj 1
-set     set
-```
-Note: System is a standardised library but its spec is located under [here](system_formal_spec.md).
+> I'm not particularly happy with any suggestion I've seen so far/thought of so this will remain empty till one is approved.
 
 ### IR Specifics
 #### Whitespace
@@ -204,7 +159,6 @@ The Architecture of IR has been standardized just to maintain consistency.
 
 #### Required Commands
 The following are all the required commands, as stated previously you **could** add more but should refrain from it since that lends itself to incompatibility.  All parsers **need** to support the following.
-> Note: All the pushing commands are detailed in depth under the [set](#set-assignments) section so I won't list them here
 - `nop` does explicitly nothing
   - IR: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
 - `comment` same as nop but when emitted will emit the comment (aka it maintains user comments)
@@ -214,40 +168,61 @@ The following are all the required commands, as stated previously you **could** 
 - `makespace` reserves space in stack
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
-  - IR: `makespace <int32>` i.e. `makespace 2`
+  - IR: `makespace <long>` i.e. `makespace 2`
 - `makereg` reserves space in object registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
-  - IR: `makereg <int32>` i.e. `makereg 2`
-- `checkspace` checks if space equals the sizeof a getter
-  - The parameter represents a function
-  - A parser **could** just do this during parsing and avoid checkspace calls
-    - Though they should still provide the lines but just comment them out
-  - IR: `checkspace <Root.Creation::GetFunction>` i.e. `checkspace System.Color::RGB`
-- `checkset` checks if stackptr (the current amount of parameters) equals the sizeof a setter
-  - The parameter represents a function
-  - A parser **could** just do this during parsing and avoid checkset calls
-    - Though they should still provide the lines but just comment them out
-    - This could be beneficial since you could also check types
-  - IR: `checkset <Root.Creation::SetFunction>` i.e. `checkset System.Color::RGB.Hex`
+  - IR: `makereg <long>` i.e. `makereg 2`
 - `set` runs the set function
   - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
   - IR: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
 - `copy` copies top value x times
-  - IR: `copy <int32>` i.e. `copy 4` (which copies top value 4 times)
-- `clear` clears all values
-  - Deprecated
-- `clearreg` clears all registers
-  - Deprecated
+  - IR: `copy <long>` i.e. `copy 4` (which copies top value 4 times)
 - `regobj` registers top object to index given
   - performs a pop then registers that object to index given
-  - IR: `regobj <int32>` i.e. `regobj 2` (registers top object to register 2)
+  - IR: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
 - `unregobj` unregisters object at index
   - set it to 'null' basically
-  - IR: `unregobj <int32>` i.e. `unregobj 2` (registers top object to register 2)
+  - IR: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
+- `pushobj` pushes object from register onto stack
+  - IR: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
+- `pushint` pushes integer onto stack
+  - IR: `pushint <long>` i.e. `pushint 59`
+- `pushnum` pushes floating point onto stack
+  - IR: `pushnum <double>` i.e. `pushnum 32.59`
+- `pushdec` pushes decimal onto stack
+  - IR: `pushdec <decimal>` i.e. `pushdec 59.56`
+- `pushstr` pushes string onto stack
+  - IR: `pushstr <string>` i.e. `pushstr "Bob"`
+- `pushchar` pushes character onto stack
+  - IR: `pushchar <character>` i.e. `pushchar 'b'`
+- `pushbool` pushes boolean onto stack
+  - IR: `pushbool <bool>` i.e. `pushbool true`
+- `push` pushes the default of type
+  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if single quote then character, if double quote then string.
+    - Therefore won't push decimal/object
+  - IR: `push <bool/long/double/string/character>` i.e. `push true`
 - `call` performs a function call on the parameter
-  - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
+  - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
+  - **should** also have a sizeof parameter that refers to how many parameters it has (easily to implement with reflection else just get assigner to state).
+  - IR: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
+- `new` creates a new object
+  - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
+  - **should** only ever push one value else it is breaking 'new' convention.
+  - IR: `new <Root.Creation>` i.e. `new System.Color`
+- `pop` pops x values off the stack
+  - Useful for when making sure stack has space.
+  - IR: `pop <long>` i.e. `pop 3` (pops the top 3 objects off the stack)
+- `compmax` check if parameter matches the maximum stack size
+  - Pushes true if max stack size is less than the parameter value else false
+  - IR: `compmax <long>` i.e. `compmax 9`
+- `compsize`
+  - Pushes true if current stack size is less than the parameter value else false
+  - IR: `compsize <long>` i.e. `compsize 3`
+- `compreg`
+  - Pushes true if register size is less than the parameter value else false
+  - IR: `compreg <long>` i.e. `compreg 10`
 
 ## Interfacing with DOML
 There are a few ways to interface with DOML, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them). 
@@ -265,4 +240,4 @@ A set call is expected to push *no* objects, and pull one object for every expec
 A getter is expected to push objects, and pull only *one* object (for the object to get from). A type is passed through the `...::` (i.e. in `System.Color::` the type is `System.Color`).  This is utilised in the `get` opcode.
 
 #### Sizeof
-Both getters and setters have a sizeof operation (could be a string to int map for example) that refers to the *maximum* amount of objects they push or pull respectively, further note: that type checking **could** be added at compile time (simple checking of opcodes, I would argue).  This is utilised in the `checkset <Root.Creation::SetFunction>` and `checkspace <Root.Creation::GetFunction>` opcodes respectively.
+Both getters and setters have a sizeof operation (could be a string to int map for example) that refers to the *maximum* amount of objects they push or pull respectively.  This should be handled at compile time making sure that setters get the correct amount of parameters and that there is enough space for getters.
