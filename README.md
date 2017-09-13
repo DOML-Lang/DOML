@@ -5,22 +5,31 @@
 
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
-This is the Specification document for DOML (Data Oriented Markup Language), which is a new markup language that takes a different approach then most. It enacts to simulate a call-stack rather than simulate data structures, this allows it to represent a constructor like look rather than the usual {...} mess.  Its simplicity can't be ignored, the entire ABNF is 74 lines including comments and nice indentation which is insanely small (especially considering TOML another 'minimalistic language' has a 219 line grammar which around ~3x larger)!
+## Brief Introduction
+DOML (Data Oriented Markup Language) is a language that enacts to stop re-inventing the wheel and start inventing wings, effectively it enacts to solve the 'problem' (as in software problem) of serialization in a different way then all other popular languages like XML/JSON/YAML/TOML/...
 
-## Why DOML?
-DOML was born out of a need, a need to have a markup language that stops functioning like just a text file and starts functioning like an integral part of the program, it was born out of an annoyance at writing code of loading a file in and either having to manually de-serialize/serialize or having to fiddle with an automatic serializer, and never knowing if the solution had a small typo in it.  I finally 'cracked' and brought out the playground project and whiteboard when I saw someone building an entire application whose whole purpose was to just take data and build a JSON object, since it was easier then writing 50 billion `"` and braces, and was validated (unlike every other markup language on the planet).  So I sat down at my desk and crafted DOML, a solution which I aimed to be efficient and to be practical to allow you to do whatever you need without much intrusion.  Hopefully I'm correct.  Further more DOML is simple, the first parser was < 300 lines, and today its < 2000 (due to the addition of bytecode and security), the entire ABNF fits in 80 lines and there are only TWO main rules (excluding comments) that is `creation` or `set` which either perform a constructor or set a variable within a variable created in a creation call.  It has 0 keywords and only 5 operators (`...`, `=`, `,`, `@`, `;`)!  Operators like `.` are part of the name, and other operators like `(`, `)`, `{`, `[`... (effectively any open/close brace/bracket/arrow/...) are replaced with `.` so the following are all the SAME call (simplicity mhmmmm); `.RGB(Normalised)`, `.RGB[Normalised]`, `.RGB<Normalised>` are all just `.RGB.Normalised`!
+Its entire ABNF is only 74 lines compared to TOMLs 219 line grammar (which is ~3x larger), this is including comments and nice spacing in both.  DOML has two rules; creating new objects, and manipulating parts of those objects.  
+
+DOML also erases the need for a middleman implicitly, no longer do you have to convert the JSON to a map then convert it to your data types, or try to use an automatic method (which often requires reflection).  DOML parses to an IR format which is ran, this means that if you have a parser that is compliant you could get IR code from it and then use it in another parser and further more it means that parsers could add new features and those new features would work in other parsers since there is a restricted set of IR commands.
+
+All together it makes it significantly faster than JSON/XML/TOML/... parsing (in basic testing, I'll do some serious benchmarks later).  This is mainly due to the fact that the syntax and parsing doesn't have to do any look-aheads, and we create IR because its easier to parse and transfer over the web (example being that you convert your source into IR and transfer it in binary format to the server to run).  Having a computer run the code as it reads it could also be a possibility.
+
+Also I should add that it is safe (in comparison to formats like YAML) this is mainly because it doesn't allow arbitary creation of objects, you can add new objects that it can create but it can't define them for you.
 
 ## Objectives
-Efficient data serialization.  Not only be fast, but also the avoidance of wasting memory.  Removal of the separation between markup languages and your project, the burning of the obscure and ugly bridge to join the two islands together using a nice steel well constructed bridge that is easy to traverse and actually supports vehicles (maybe I went too far on this analogy?)...  Further more it aims to be simple, the avoidance of 'arrays' and complex structures for implicit collections is key!
+- Efficient (cost of speeds have to provide a high benefit of utility)
+- Integrated into your project (no longer a separate part)
+- Simple (arrays are implicit for example)
 
 ## A quick overview
 ```C
 // This is a comment
-@ Test        = System.Color ... // System is just a random name represents a 'root object', System.Color represents a 'object'
-;             .RGB             = 255, 64, 128
+// Construct a new System.Color
+@ Test        = System.Color ...
+;             .RGB             = 255, 64, 128 // Implicit 'array'
 
 @ TheSame     = System.Color ...
-;             .RGB(Normalised) = 1, 0.25, 0.5 // 'ish' normally I would round down not up but eh
+;             .RGB(Normalised) = 1, 0.25, 0.5, // You can have trailing commas
 
 @ AgainSame   = System.Color ...
 ;             .RGB(Hex)        = 0xFF4080
@@ -34,14 +43,13 @@ Efficient data serialization.  Not only be fast, but also the avoidance of wasti
 ;             .RGB             = Test.RGB
 ;             .Name            = "Copy"
 ```
-
-Below is the IR representation of the above code;
+When you put this into a parser you'll get the below output (its standidized so you **need** to get the below output, though I've not included all the comments to keep it more concise and short);
 ```assembly
 ; This is an autogenerated IR representation of the supplied source code
 ;           This is a comment             ; USER COMMENT
 ; Setup Space
 makespace   4                             ; Makes sure the stack supports 4 objects at a time
-makereg     4                             ; Makes sure threre are 4 registers
+makereg     4                             ; Makes sure there are 4 registers
 ; Test.RGB
 new         System.Color                  ; Creates a new object from System.Color
 regobj      0                             ; Registers top object to register 0
@@ -80,16 +88,12 @@ pushstr     "Copy"                        ; Pushes "Copy"
 pushobj     3                             ; Pushes object from register 2
 set         System.Color::Name            ; Call Name on System.Color
 ```
-The use of `;` as a comment is purely just due to its comparison to assembly, I haven't actually decided on whether or not comments will 1) be allowed and 2) have the character `;` or `//` or even `#` though there will be no block comments and as you can see above the block comment is converted into a list of comments.  Comments will be reserved as you can see if they are allowed and extra ones can be toggled to display exactly what is occuring (incase one has to debug).
-
-Effectively the 'compiler' will convert your DOML markup to this set of commands which will be executed by the system.  Note: this is done because the actual conversion to bytecode is effectively nothing in terms of speed and the output won't be emitted unless that is wanted by the user.  This also allows the actual runner to run the bytecode rather than interpret the markup allowing it to execute faster.  Sending bytecode over the internet rather than a JSON output is also faster and more compact.
-
-Another thing to note is that while in the bytecode I used things like `System.Color`, `RGB`, `RGB.Normalised` and so on in the actual implementation it will use an index value like `#0`/`0`/`*0` the exact prefix (if any) will be determined later, and it'll map to the implementation.
+I won't go into great detail about the IR, but effectively it is similar to assembly; the `;` is a line comment, each command is seperated by a line and has one parameter (only one).
 
 ## Quick Spec Details
 - DOML is case sensitive
 - DOML must be a valid UTF-8 encoded unicode document (though I don't see why you can't support other formats)
-- DOML refers to the initial source code not to the produced bytecode, parsers need to support ONLY DOML and don't need to support parsing bytecode, though due to its simplicity it may be easy to support.
+- DOML refers to the initial source code not to the produced IR, and when I refer to IR I refer to the produced output.
 
 ## Types
 This will be covered in more detail elsewhere but here are all the types
@@ -98,11 +102,13 @@ This will be covered in more detail elsewhere but here are all the types
 | ------------- | ------------------------------------- | -------------------------------------------------- |
 | Integer       | 12, -40, +2, 01010b, 0x40FF, 0o42310  | 0b for binary, 0x for hex, 0o for octal            |
 | Double        | 10.5, 20, 5e+22, 1e6, -2.54E-2        | E for exponent                                     |
-| Decimals      | $40, $99.05, $-4e+22                  | Can use E for exponent and '$' refers to decimal   |
+| Decimals      | $40, +$99.05, -$4e+22                 | Can use E for exponent and '$' refers to decimal   |
 | String        | "This contains a \" escaped quote"    | "...", you can escape `"` with `\`                 |
 | Char          | 'C', '5'                              | Maps to a character                                |
 | Boolean       | true, false                           | The boolean values                                 |
 | Object        | Test, X, MyColor                      | Refers to a previously defined object              |
+
+> Note: decimals have standidised for `$` though many parsers will probably allow the various other currency signs.
 
 ## Syntax
 I'll cover this quickly here you can view an indepth either under [indepth syntax](doml_formal_spec.md) or at by viewing the [abnf](doml.abnf).
@@ -139,6 +145,17 @@ Note that the second X wasn't required, this is because the `...` means just pre
 #### That's it!
 > Wait what?
 Yes it may seem weird but the syntax is THAT simple!  It will probably expand a little but I want to refrain from heavy changes that break a lot of things.
+
+#### Complex Data Types
+There are no complex types in DOML for good reason, there is no need for them.  If you want nesting of objects then just merely define the sub object before the parent object and assign it like;
+```C
+@ B   = W.V ...
+  .Q  = 2
+@ A   = X.Y ...
+  .C = B
+```
+Arrays may be supported in the future (I have a concept of some IR code) though currently multiple parameters do fit the job (though the requirement of a constricted stack size hurts parameter lists with undefined amounts).
+
 
 #### But no arrays...?
 There are still arrays remember `B, C, D` you passing multiple values to `.A` your effectively passing a heterogeneous array (allows any type), at its core arrays are just this (well that and they are homogeneous or the same type) modern arrays often tack on a little length variable and I guess you could always do that yourself, and the argument may be that we should handle that, but I'm still not convinced on that front since the ONLY case where that would be useful would be when you are passing multiple values to a function and you want one of the values to be an array and the others to not be an array.  Otherwise you can always just either keep popping till you get a 'false' (run out of elements) or be a good person and do a for loop using a variable that says how big the 'stack' is.
