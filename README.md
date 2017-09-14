@@ -190,4 +190,5 @@ If you have an implementation, send a pull request adding to this list. Please n
 - [C++](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-Cxx)
 
 ## Editor Support
-- None yet, but VIM/Notepad++/EMACS/Sublime Text/VS Code are all in development
+- [Notepad++](https://github.com/DOML-DataOrientedMarkupLanguage/Notepad-Syntax)
+- None yet, but VIM/EMACS/Sublime Text/VS Code are all in development
