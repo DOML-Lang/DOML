@@ -191,4 +191,4 @@ If you have an implementation, send a pull request adding to this list. Please n
 
 ## Editor Support
 - [Notepad++](https://github.com/DOML-DataOrientedMarkupLanguage/Notepad-Syntax)
-- None yet, but VIM/EMACS/Sublime Text/VS Code are all in development
+- vim/EMACS/Sublime Text/VS Code are all in development
