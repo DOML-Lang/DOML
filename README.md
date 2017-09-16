@@ -53,23 +53,23 @@ makereg     4                             ; Makes sure there are 4 registers
 ; Test.RGB
 new         System.Color                  ; Creates a new object from System.Color
 regobj      0                             ; Registers top object to register 0
-push32i     255                           ; Pushes 32
-push32i     64                            ; Pushes 64
-push32i     128                           ; Pushes 128
+pushint     255                           ; Pushes 32
+pushint     64                            ; Pushes 64
+pushint     128                           ; Pushes 128
 pushobj     0                             ; Pushes object from register 0
 set         System.Color::RGB             ; Call RGB on System.Color
 ; TheSame.RGB.Normalised
 new         System.Color                  ; Creates a new object from System.Color
 regobj      1                             ; Registers top object to register 1
-push32f     1                             ; Pushes 1.0f
-push32f     0.25                          ; Pushes 0.25f
-push32f     0.5                           ; Pushes 0.5f
+pushnum     1                             ; Pushes 1.0f
+pushnum     0.25                          ; Pushes 0.25f
+pushnum     0.5                           ; Pushes 0.5f
 pushobj     1                             ; Pushes object from register 1
 set         System.Color::RGB.Normalised  ; Call RGB.Normalised on System.Color
 ; AgainSame.RGB.Hex
 new         System.Color                  ; Creates a new object from System.Color
 regobj      2                             ; Registers top object to register 2
-push32i     16728192                      ; Pushes 16728192
+pushint     16728192                      ; Pushes 16728192
 pushobj     2                             ; Pushes object from register 2
 set         System.Color::RGB.Hex         ; Call RGB.Hex on System.Color
 ; AgainSame.Name
