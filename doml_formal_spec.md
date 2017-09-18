@@ -46,12 +46,16 @@ The file ending **must** be `.doml` for *DOML* files and `.odoml` for the IR (si
 The following details relate to the syntax.
 
 ### Comments
-The following comments **must** be supported for all *DOML* code;
+The following comments **must** be supported for all *DOML* code;  Further more block comments can occur anywhere as shown below.
 ```C
 // A line comment that terminates at the end of the line
 /* A block comment that can be nested! */
+/* 0 */ @ /* 1 */ Example /* 2 */ = /* 3 */ System.Color /* 4 */ ... /* 5 */
+/* 6 */ ; /* 7 */ .RGB(Normalised) /* 8 */ = /* 9 */ 212 /* 10 */,/* 11 */ 255 /* 12 */, /* 13 */ 150 /* 14 */,
 ```
-The following comment **must** be supported for all *IR* code;
+> However, when they are preserved they should be preserved in 'order'.  I.e. 0, 1, 2, and 3 will occur before the `new` instruction.  4, 5, 6, 7, 8, 9 will occur before any of the pushes or `set` call and after the `new` call.  And 10 and 11 will occur after the first push but before the second (i.e. after the push of 212 but before 255); 12 and 13 will occur after push of 255 but before push of 150 and 14 will occur after push of 150 but before call.
+
+The following comment **must** be supported for all *IR* code;  Since no block comments exist there is no debate about where they can occur.
 ```Assembly
 ; A line comment that terminates at the end of the line
 ```
@@ -61,21 +65,27 @@ Both DOML and IR share the same type system, all the following types **must** be
 - Integers
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
+  - Can have `_` in numbers.  Though they can't however occur at the beginning or ending of a number and you can't have two next to each other.
 - Floating Point
   - Double Precision 64 bits (8 bytes), by default
   - IEEE 754
+  - Can have `_` in numbers.  Though they can't however occur at the beginning or ending of a number and you can't have two next to each other and can't occur next to the `.` (if there is one).
 - Decimals
-  - `$` prefix
+  - `$` prefix (note the `+` or `-` goes before the `$` prefix i.e. `-$40.95` or `+$59.54`/`$59.54`).
   - Double Precision 64 bit (8 bytes) by default.
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
+  - Can have `_` in numbers.  Though they can't however occur at the beginning or ending of a number and you can't have two next to each other, also have to occur after the `$` and can't occur next to the `.` (if there is one).
 - String
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
+  - You can insert a unicode character like `\u459\` (insert unicode character 459)
 - Character
   - Begins with `'` ends with `'`
   - You can escape quotes only using `\'`
+  - You can insert a unicode character like `\u459\` (insert unicode character 459)
 - Boolean
   - `true` and `false`
+  - Can't have any objects with names that match `true` or `false`.
 - Objects
   - Represents any creation object for DOML and for ODOML refers to a register ID.
   
