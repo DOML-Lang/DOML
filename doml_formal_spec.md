@@ -251,3 +251,15 @@ A getter is expected to push objects, and pull only *one* object (for the object
 
 #### Sizeof
 Both getters and setters have a sizeof operation (could be a string to int map for example) that refers to the *maximum* amount of objects they push or pull respectively.  This should be handled at compile time making sure that setters get the correct amount of parameters and that there is enough space for getters.
+- A value of > 0 refers to an exact amount of parameters
+- 0 refers to no parameters
+- < 0 refers to atleast x parameter/s but no limit (i.e. -1 refers to atleast 1 parameter, -10 refers to atleast 10 parameters)
+
+## Binary Format
+For sake of keeping formats similar and standidised I'll include the official binary format for sending streams of DOML data over systems.  This could be used to send DOML as a more simplistic stream rather than text over the internet or to simplistic microcomputers (DOML is very useful for microcomputers due to its ability to just be in binary and all commands only take up a single byte which allows it to be compact).
+
+The stream looks something like this (*note: for simplicity I've not included a footer and a header which you may or may not want to include*);
+`| OP_CODE (1 Byte) | LENGTH_IN_BYTES (1 Byte) | DATA (n Byte/s) |`
+Now while have a length in bytes if we can already figure out how long the data is?  Well simply put it means we can make data shorter and more compact in a lot of scenarios for example if your sending a signed integer < 128 then we can just send it as a single byte of data with the 1 byte opcode and 1 byte length, thus resulting in a 3 byte message instead of a 9 byte message if we sent it as a 64 bit integer without the length.  This does allow lengths up to 255 bytes or 2,040 bits for strings and comments which should suffice (though I don't see how one couldn't extend this length to two bytes if required), further more this even supports sending more complex messages over more packages.
+
+Further more optimisations could be had such as reducing the opcode to only 5 bits (since the current opcode list is < 32 instructions), reducing the length down to only 3 bits for most types (since floats and integers can only be 8 bytes long max) and 4 bits for decimals (since they are a max 16 bytes).  Removing the length field for bools and characters and so on could also optimise packet sizes and speed things up.
