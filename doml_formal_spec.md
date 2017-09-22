@@ -1,5 +1,5 @@
 ## What is this?
-This is the formal specification document for DOML, mainly aimed at developers who wish to implement a parser.
+This is the formal specification document for *DOML*, mainly aimed at developers who wish to implement a parser.
 
 ## Terminology
 The following are key words and their definitions;
@@ -7,7 +7,7 @@ The following are key words and their definitions;
 - **should** : For a parser to be clarified as 'completely compliant' with this specification document, it should implement this 'feature'
 - **could**/**may** : A parser could support these features but they are not relevant to be 'compliant' with this specification document, there are many additional options they could add and I won't even try to list them all.
 - *text* : Refers to any Unicode readable printable character including language characters, and 'emojis' (though a parser **could** warn against the use of using 'emojis') and underscore.
-- *IR* : Refers to the bytecode produced through the 'compilation' of the DOML source file (stands for Intermediate Representation).
+- *IR* : Refers to the bytecode produced through the 'compilation' of the *DOML* source file (stands for Intermediate Representation).
 - *DOML* : Refers to Data Oriented Markup Language (this 'language')
 
 ## Table of Contents
@@ -33,7 +33,7 @@ The following are key words and their definitions;
 - [Binary Format](#binary-format)
 
 ## File Format
-The file ending **must** be `.doml` for *DOML* files and `.odoml` for the IR (similarity to `.o` files).  Furthermore, they **should** be encoded with standard UTF-8, though other parsers **could** support other formats.
+The file ending **must** be `.doml` for *DOML* files and `.odoml` for the *IR* (similarity to `.o` files).  Furthermore, they **should** be encoded with standard UTF-8, though other parsers **could** support other formats.
 
 ## Other Details
 - *DOML*
@@ -62,7 +62,7 @@ The following comment **must** be supported for all *IR* code;  Since no block c
 ```
 
 ### Types
-Both DOML and IR share the same type system, all the following types **must** be implemented.
+Both *DOML* and *IR* share the same type system, all the following types **must** be implemented.
 - Integers
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
@@ -88,24 +88,24 @@ Both DOML and IR share the same type system, all the following types **must** be
   - `true` and `false`
   - Can't have any objects with names that match `true` or `false`.
 - Objects
-  - Represents any creation object for DOML and for ODOML refers to a register ID.
+  - Represents any creation object for *DOML* and for *IR* refers to a register ID.
   
 ### DOML Specifics
 #### Creation Assignments
-Creation assignments are one of the two assignments you can perform using DOML.  They **must** be supported by the parser.  The syntax is as follows;
+Creation assignments are one of the two assignments you can perform using *DOML*.  They **must** be supported by the parser.  The syntax is as follows;
 ```C
 @ MyColor = System.Color
 ```
 The `@` signifies that it is a creation assignment (you are creating a new variable), the identifier `MyColor` can be used below that line to refer to the object created, `System.Color` is the function to call which is expected to push an object onto the stack.
 
-Every creation assignment should form the following IR output;
+Every creation assignment should form the following *IR* output;
 ```assembly
 new Library.Object ; i.e. System.Color
 regobj index       ; This is the index to place it in the registers should start at 0 and for every object increase by one
 ```
 
 #### Set Assignments
-Set assignments are the other assignment you can perform using DOML.  They **must** be supported by the parser.
+Set assignments are the other assignment you can perform using *DOML*.  They **must** be supported by the parser.
 The syntax is as follows;
 ```C
 ; MyColor.Color(HexAndName) = 0xFF4080, "Name"
@@ -116,7 +116,7 @@ The `;` signifies that it is a setting assignment (you are setting a variable of
 
 `MyColor.Color(HexAndName)` becomes a `pusho` for the register that `MyColor` exists in and a set function on `Color.HexAndName`, note that the `( ... )` became `.` the reason why is that a list of aliases exist for `.` which are; `<`, `>`, `-`, `.`, `(`, `)`, `[`, `]`, `{`, `}` so `Color(HexAndName)` is really `Color.HexAndName.` which is trimmed.
 
-Every set assignment should form the following IR output;
+Every set assignment should form the following *IR* output;
 - First, every parameter is pushed
 ```assembly
 pushint 16728192
@@ -143,18 +143,18 @@ set functionToCall ; i.e. set Color.Hex
 The index **should** refer to the order of colours produced but in actual fact it doesn't matter and this is why when you register an object you supply an index this just means that how you manage the indexes internally is less important since the code produced will work anywhere thanks to the requirement of supplying an index to `regobj`.  Furthermore you really **should** order your objects from 0 upwards, incrementing by one each time.
 
 #### Embedding IR
-Embedding IR **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).
+Embedding *IR* **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).
 > I'm not particularly happy with any suggestion I've seen so far/thought of so this will remain empty till one is approved.
 
 ### IR Specifics
 #### Whitespace
-- Whitespace is important in IR
-- At least one space has to exist between the IR command and the parameter.
-- Each line can only contain one IR command and a parameter (i.e. there must be a newline between each 'Instruction')
-- Comments can only appear between 'Instructions' and at the top/bottom, i.e. they can't exist after the IR command and before the parameter.
+- Whitespace is important in *IR*
+- At least one space has to exist between the *IR* command and the parameter.
+- Each line can only contain one *IR* command and a parameter (i.e. there must be a newline between each 'Instruction')
+- Comments can only appear between 'Instructions' and at the top/bottom, i.e. they can't exist after the *IR* command and before the parameter.
 
 #### Architecture
-The Architecture of IR has been standardized just to maintain consistency.
+The Architecture of *IR* has been standardized just to maintain consistency.
 - All pushing/popping operations should operate on a stack based model
   - It **shouldn't** be dynamically allocated since the `makespace` command should be akin to a malloc.
   - You **must** expose both the current size of the stack and the max size.
@@ -171,72 +171,72 @@ The Architecture of IR has been standardized just to maintain consistency.
 #### Required Commands
 The following are all the required commands, as stated previously you **could** add more but should refrain from it since that lends itself to incompatibility.  All parsers **need** to support the following.
 - `nop` does explicitly nothing
-  - IR: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
+  - *IR*: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
 - `comment` same as nop but when emitted will emit the comment (aka it maintains user comments)
-  - IR: `; <User Comment>` i.e. `; Create a new color`
+  - *IR*: `; <User Comment>` i.e. `; Create a new color`
 - `panic` panics (produces an error) if top value matches the parameter supplied
-  - IR: `panic <any>` i.e. `panic true` or `panic 100`
+  - *IR*: `panic <any>` i.e. `panic true` or `panic 100`
 - `makespace` reserves space in stack
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
-  - IR: `makespace <long>` i.e. `makespace 2`
+  - *IR*: `makespace <long>` i.e. `makespace 2`
 - `makereg` reserves space in object registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
-  - IR: `makereg <long>` i.e. `makereg 2`
+  - *IR*: `makereg <long>` i.e. `makereg 2`
 - `set` runs the set function
   - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
-  - IR: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
+  - *IR*: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
 - `copy` copies top value x times
-  - IR: `copy <long>` i.e. `copy 4` (which copies top value 4 times)
+  - *IR*: `copy <long>` i.e. `copy 4` (which copies top value 4 times)
 - `regobj` registers top object to index given
   - performs a pop then registers that object to index given
-  - IR: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
+  - *IR*: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
 - `unregobj` unregisters object at index
   - set it to 'null' basically
-  - IR: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
+  - *IR*: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
 - `pushobj` pushes object from register onto stack
-  - IR: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
+  - *IR*: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
 - `pushint` pushes integer onto stack
-  - IR: `pushint <long>` i.e. `pushint 59`
+  - *IR*: `pushint <long>` i.e. `pushint 59`
 - `pushnum` pushes floating point onto stack
-  - IR: `pushnum <double>` i.e. `pushnum 32.59`
+  - *IR*: `pushnum <double>` i.e. `pushnum 32.59`
 - `pushdec` pushes decimal onto stack
-  - IR: `pushdec <decimal>` i.e. `pushdec 59.56`
+  - *IR*: `pushdec <decimal>` i.e. `pushdec 59.56`
 - `pushstr` pushes string onto stack
-  - IR: `pushstr <string>` i.e. `pushstr "Bob"`
+  - *IR*: `pushstr <string>` i.e. `pushstr "Bob"`
 - `pushchar` pushes character onto stack
-  - IR: `pushchar <character>` i.e. `pushchar 'b'`
+  - *IR*: `pushchar <character>` i.e. `pushchar 'b'`
 - `pushbool` pushes boolean onto stack
-  - IR: `pushbool <bool>` i.e. `pushbool true`
+  - *IR*: `pushbool <bool>` i.e. `pushbool true`
 - `push` pushes the default of type
   - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if single quote then character, if double quote then string.
     - Therefore won't push decimal/object
-  - IR: `push <bool/long/double/string/character>` i.e. `push true`
+  - *IR*: `push <bool/long/double/string/character>` i.e. `push true`
 - `call` performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
   - **should** also have a sizeof parameter that refers to how many parameters it has (easily to implement with reflection else just get assigner to state).
-  - IR: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
+  - *IR*: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
 - `new` creates a new object
   - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
   - **should** only ever push one value else it is breaking 'new' convention.
-  - IR: `new <Root.Creation>` i.e. `new System.Color`
+  - *IR*: `new <Root.Creation>` i.e. `new System.Color`
 - `pop` pops x values off the stack
   - Useful for when making sure stack has space.
-  - IR: `pop <long>` i.e. `pop 3` (pops the top 3 objects off the stack)
+  - *IR*: `pop <long>` i.e. `pop 3` (pops the top 3 objects off the stack)
 - `compmax` check if parameter matches the maximum stack size
   - Pushes true if max stack size is less than the parameter value else false
-  - IR: `compmax <long>` i.e. `compmax 9`
+  - *IR*: `compmax <long>` i.e. `compmax 9`
 - `compsize`
   - Pushes true if current stack size is less than the parameter value else false
-  - IR: `compsize <long>` i.e. `compsize 3`
+  - *IR*: `compsize <long>` i.e. `compsize 3`
 - `compreg`
   - Pushes true if register size is less than the parameter value else false
-  - IR: `compreg <long>` i.e. `compreg 10`
+  - *IR*: `compreg <long>` i.e. `compreg 10`
 
 ## Interfacing with DOML
-There are a few ways to interface with DOML, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them). 
+There are a few ways to interface with *DOML*, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them). 
 
 #### Static vs Reflection Bindings
 Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often 20x slower).
@@ -257,7 +257,7 @@ Both getters and setters have a sizeof operation (could be a string to int map f
 - < 0 refers to atleast x parameter/s but no limit (i.e. -1 refers to atleast 1 parameter, -10 refers to atleast 10 parameters)
 
 ## Binary Format
-DOML is also very useful for sending data to systems like robotics or other smaller 'computer systems' that rely on a small stack to make them cheaper and more efficient.  This could also be used in applications like fitness watches or the like to send data.  No parser is required to support this since no parser is required to support parsing bytecode.
+*DOML* is also very useful for sending data to systems like robotics or other smaller 'computer systems' that rely on a small stack to make them cheaper and more efficient.  This could also be used in applications like fitness watches or the like to send data.  No parser is required to support this since no parser is required to support parsing bytecode.
 
 #### Main Variant
 The stream looks something like this (*note: for simplicity I've not included a footer and a header which you may or may not want to include but it often is case by case*);
