@@ -41,7 +41,7 @@ Also I should add that it is safe (in comparison to formats like YAML) this is m
 ;             .Name            = "Copy"
 ```
 > Note: Nested multi line comments are allowed (I didn't put it in the example since github doesn't recognise DOML yet so I'm just using `C` in the meantime which doesn't support nesting).
-> > Further Note: The copy example also shows you you can nest objects like `; Child.Parent = Parent`.
+> > Further Note: The copy example also shows you that you can nest objects like `; Child.Parent = Parent`.
 
 When you put this into a parser you'll get the below output (its standidized so you **will** get the below output - though the supplementary comments for each line may differ, though I've not included all the comments to keep it more concise and short);
 ```assembly
