@@ -187,6 +187,7 @@ The following are all the required commands, as stated previously you **could** 
 - `set` runs the set function
   - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
+  - **should** also have a sizeof parameter that refers to how many parameters it pops.
   - *IR*: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
 - `copy` copies top value x times
   - *IR*: `copy <long>` i.e. `copy 4` (which copies top value 4 times)
@@ -216,7 +217,7 @@ The following are all the required commands, as stated previously you **could** 
   - *IR*: `push <bool/long/double/string/character>` i.e. `push true`
 - `call` performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
-  - **should** also have a sizeof parameter that refers to how many parameters it has (easily to implement with reflection else just get assigner to state).
+  - **should** also have a sizeof parameter that refers to how many parameters it pushes.
   - *IR*: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
 - `new` creates a new object
   - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
