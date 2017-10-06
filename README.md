@@ -72,7 +72,7 @@ REG_OBJ         2                                                  ; Registers t
 PUSH_INT        16728192                                           ; Pushes long integer 16728192 onto the stack
 PUSH_OBJ        2                                                  ; Pushes object in register ID: 2 onto the stack
 SET             System.Color::RGB.Hex                              ; Runs the System.Color::RGB.Hex function
-PUSH_STR        "OtherName"                                        ; Pushes string ""OtherName"" onto the stack
+PUSH_STR        "OtherName"                                        ; Pushes string "OtherName" onto the stack
 PUSH_OBJ        2                                                  ; Pushes object in register ID: 2 onto the stack
 SET             System.Color::Name                                 ; Runs the System.Color::Name function
 COMMENT         " Multi Line Comment Blocks are great "            ; USER COMMENT
@@ -86,7 +86,7 @@ PUSH_OBJ        0                                                  ; Pushes obje
 CALL            System.Color::B                                    ; Performs a getter call on System.Color::B and pushes the values onto the stack
 PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
 SET             System.Color::RGB                                  ; Runs the System.Color::RGB function
-PUSH_STR        "Copy"                                             ; Pushes string ""Copy"" onto the stack
+PUSH_STR        "Copy"                                             ; Pushes string "Copy" onto the stack
 PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
 SET             System.Color::Name                                 ; Runs the System.Color::Name function
 ```
