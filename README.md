@@ -1,4 +1,4 @@
-# Data Oriented Markup Language - DOML (.Net)
+# Data Oriented Markup Language - DOML
 > By Braedon Wooding
 
 > Latest Version N/A (Approaching 0.1)
