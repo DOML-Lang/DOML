@@ -49,8 +49,8 @@ When you put this into a parser you'll get the below output (its standidized so 
 ; This bytecode will be overriden if new bytecode is generated.
 MAKE_SPACE      4                                                  ; Reserves 4 spaces on the stack.
 MAKE_REG        4                                                  ; Reserves 4 spaces on the register.
-COMMENT         This is a comment                                  ; USER COMMENT
-COMMENT         Construct a new System.Color                       ; USER COMMENT
+COMMENT         "This is a comment"                                ; USER COMMENT
+COMMENT         "Construct a new System.Color"                     ; USER COMMENT
 NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
 REG_OBJ         0                                                  ; Registers top object to index 0 after popping it off the stack
 PUSH_INT        255                                                ; Pushes long integer 255 onto the stack
@@ -58,7 +58,7 @@ PUSH_INT        64                                                 ; Pushes long
 PUSH_INT        128                                                ; Pushes long integer 128 onto the stack
 PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
 SET             System.Color::RGB                                  ; Runs the System.Color::RGB function
-COMMENT         Implicit 'array'                                   ; USER COMMENT
+COMMENT         "Implicit 'array'"                                 ; USER COMMENT
 NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
 REG_OBJ         1                                                  ; Registers top object to index 1 after popping it off the stack
 PUSH_INT        1                                                  ; Pushes long integer 1 onto the stack
@@ -66,7 +66,7 @@ PUSH_NUM        0.25                                               ; Pushes doub
 PUSH_NUM        0.5                                                ; Pushes double 0.5 onto the stack
 PUSH_OBJ        1                                                  ; Pushes object in register ID: 1 onto the stack
 SET             System.Color::RGB.Normalised                       ; Runs the System.Color::RGB.Normalised function
-COMMENT         You can have trailing commas                       ; USER COMMENT
+COMMENT         "You can have trailing commas"                     ; USER COMMENT
 NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
 REG_OBJ         2                                                  ; Registers top object to index 2 after popping it off the stack
 PUSH_INT        16728192                                           ; Pushes long integer 16728192 onto the stack
@@ -75,7 +75,7 @@ SET             System.Color::RGB.Hex                              ; Runs the Sy
 PUSH_STR        "OtherName"                                        ; Pushes string ""OtherName"" onto the stack
 PUSH_OBJ        2                                                  ; Pushes object in register ID: 2 onto the stack
 SET             System.Color::Name                                 ; Runs the System.Color::Name function
-COMMENT         Multi Line Comment Blocks are great                ; USER COMMENT
+COMMENT         " Multi Line Comment Blocks are great "            ; USER COMMENT
 NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
 REG_OBJ         3                                                  ; Registers top object to index 3 after popping it off the stack
 PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
