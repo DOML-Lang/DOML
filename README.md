@@ -100,7 +100,6 @@ I won't go into great detail about the IR, but effectively it is similar to asse
 | Double        | 10.5, 20, 5e+22, 1e6, -2.54E-2        | E for exponent                                     |
 | Decimals      | $40, +$99.05, -$4e+22                 | Can use E for exponent and '$' refers to decimal   |
 | String        | "This contains a \" escaped quote"    | "...", you can escape `"` with `\`                 |
-| Char          | 'C', '5'                              | Maps to a character                                |
 | Boolean       | true, false                           | The boolean values                                 |
 | Object        | Test, X, MyColor                      | Refers to a previously defined object              |
 
