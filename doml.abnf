@@ -32,8 +32,6 @@ backslash = %x5C        ; \
 
 forwardslash = %x2F   ; /
 
-singlequote = %x27      ; '
-
 identifier = ("_" / ALPHA) *("_" / ALPHA / DIGIT)
 
 creationIdentifier = identifier "." identifier
@@ -55,12 +53,11 @@ exp = "e" [ minus / plus ] *DIGIT
 float = [ minus / plus ] *( DIGIT ) ( frac / ( frac exp ) / exp ) 
            
 string = quote *(text / (backslash quote)) quote ;; "ANY" (including the opportunity to escape quotes)
-char = singlequote *(text / (backslash singlequote)) singlequote ;; 'ANY' (including the opportunity to escape quotes)
 
 boolean = %s"true" / %s"false" ;; true or false
 lookup = identifier [ "." extendedIdentifier ]
 
-value = integer / float / string / char / boolean / lookup
+value = integer / float / string / boolean / lookup
 values = value *( "," value )
 
 ;; Intermediates
