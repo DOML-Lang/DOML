@@ -80,10 +80,6 @@ Both *DOML* and *IR* share the same type system, all the following types **must*
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
   - You can insert a unicode character like `\u459\` (insert unicode character 459)
-- Character
-  - Begins with `'` ends with `'`
-  - You can escape quotes only using `\'`
-  - You can insert a unicode character like `\u459\` (insert unicode character 459)
 - Boolean
   - `true` and `false`
   - Can't have any objects with names that match `true` or `false`.
@@ -130,10 +126,10 @@ The following commands are available for using;
   - IEEE754 format
 - `pushdec` pushes decimal value of 64 bit (8 bytes)
   - Decimal Precision
-- `pushstr`/`pushchar` pushes a string or character
+- `pushstr` pushes a string
   - Unicode Support
 - `pushbool` pushes a boolean value
-- `push` pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push character/string (depending if its single/double) if its 'true/false' it'll push bool.  So it'll never push object or decimal.
+- `push` pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push string (depending if its single/double) if its 'true/false' it'll push bool.  So it'll never push object or decimal.
 
 Regardless after all values are pushed then the object is pushed and the set function is called.
 ```assembly
@@ -207,14 +203,12 @@ The following are all the required commands, as stated previously you **could** 
   - *IR*: `pushdec <decimal>` i.e. `pushdec 59.56`
 - `pushstr` pushes string onto stack
   - *IR*: `pushstr <string>` i.e. `pushstr "Bob"`
-- `pushchar` pushes character onto stack
-  - *IR*: `pushchar <character>` i.e. `pushchar 'b'`
 - `pushbool` pushes boolean onto stack
   - *IR*: `pushbool <bool>` i.e. `pushbool true`
 - `push` pushes the default of type
-  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if single quote then character, if double quote then string.
+  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if double quote then string.
     - Therefore won't push decimal/object
-  - *IR*: `push <bool/long/double/string/character>` i.e. `push true`
+  - *IR*: `push <bool/long/double/string>` i.e. `push true`
 - `call` performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
   - **should** also have a sizeof parameter that refers to how many parameters it pushes.
