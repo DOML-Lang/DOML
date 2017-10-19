@@ -5,10 +5,21 @@
 
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
+## TLDR
+- DOML is more like a scripting language
+- It parses down to a IR (effectively the same look as assembly but simpler - one parameter) that can be passed efficiently across devices
+- It's grammar is dead simple (71 lines of ABNF compared to TOML's 219 line grammar)
+- It's easy to write and read (and parse)
+- It's fast to parse (and IR is even faster, especially if passed as byte stream)
+- All the code you write will actually create real objects (though it is safe, and you define what objects can be created)
+    - Not only this but you can edit properties of those objects and reference those objects both their properties and them
+- Callback system, with an aim of both static and reflective bindings.
+- Whitespace insensitive
+
 ## Brief Introduction
 DOML (Data Oriented Markup Language) is a language that enacts to stop re-inventing the wheel and start inventing wings, effectively it enacts to solve the 'problem' (as in software problem) of serialization in a different way then all other popular languages like XML/JSON/YAML/TOML/...
 
-Its entire ABNF is only 74 lines compared to TOMLs 219 line grammar (which is ~3x larger), this is including comments and nice spacing in both.  DOML has two rules; creating new objects, and manipulating parts of those objects.  
+Its entire ABNF is only 71 lines compared to TOMLs 219 line grammar (which is ~3x larger), this is including comments and nice spacing in both.  DOML has two rules; creating new objects, and manipulating parts of those objects.  
 
 DOML also erases the need for a middleman implicitly, no longer do you have to convert the JSON to a map then convert it to your data types, or try to use an automatic method (which often requires reflection).  DOML parses to an IR format which is ran, this means that if you have a parser that is compliant you could get IR code from it and then use it in another parser and further more it means that parsers could add new features and those new features would work in other parsers since there is a restricted set of IR commands.
 
@@ -37,7 +48,7 @@ Also I should add that it is safe (in comparison to formats like YAML) this is m
 
 /* Multi Line Comment Blocks are great */
 @ Copy        = System.Color ...
-;             .RGB             = Test.R, Test.G, Test.B
+;             .RGB             = Test.R, Test.G, Test.B // Reference other objects
 ;             .Name            = "Copy"
 ```
 > Note: Nested multi line comments are allowed (I didn't put it in the example since github doesn't recognise DOML yet so I'm just using `C` in the meantime which doesn't support nesting).
@@ -86,6 +97,7 @@ PUSH_OBJ        0                                                  ; Pushes obje
 CALL            System.Color::B                                    ; Performs a getter call on System.Color::B and pushes the values onto the stack
 PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
 SET             System.Color::RGB                                  ; Runs the System.Color::RGB function
+COMMENT         "Reference other objects"                          ; USER COMMENT
 PUSH_STR        "Copy"                                             ; Pushes string "Copy" onto the stack
 PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
 SET             System.Color::Name                                 ; Runs the System.Color::Name function
@@ -108,7 +120,7 @@ I won't go into great detail about the IR, but effectively it is similar to asse
 ## Comparison with other formats
 > I've re-written this so many times because DOML is so different it almost accomplishes the same goal completely differently.  So its hard to compare.
 
-Effectively DOML is simpler and more efficient then the other data formats.  XML is hard for machines to parse, JSON is overly complex and hard to write, YAML is way to complex (no parser is fully 1.1 compliant and there are basically no 1.2 parsers at all), and INI isn't standidised.  TOML is closer to DOML I think then most other languages (and well it does share 3/4 of the same letters though I would argue TOML's acronym is less informative), they both try to be simple but I feel that TOML falls into the trap of trying to make the current solution as nice as possible where as DOML tries to solve the problem at a new angle, TOML is more akined for small config files where as DOML is nicer for files with multiple objects.
+Effectively DOML is simpler and more efficient then the other data formats.  XML is hard for machines to parse, JSON is overly complex and hard to write, YAML is way to complex (no parser is fully 1.1 compliant and there are basically no 1.2 parsers at all), and INI isn't standidised.  TOML is closer to DOML I think then most other languages (and well it does share 3/4 of the same letters though I would argue TOML's acronym is less informative and serves an 'ego' inflating purpose), they both try to be simple but I feel that TOML falls into the trap of trying to make the current solution as nice as possible where as DOML tries to solve the problem at a new angle, TOML is more akined for small config files where as DOML is nicer for files with multiple objects.
 
 Effectively DOML is a scripting language that is constrained to purely object creation and 'editing', this allows it to be effective at what it does and makes it as low level as possible (IR brings it even closer).  I would argue its still a markup language since that's what it does it notates objects.  Arguably a different name could have been DOON or Data Oriented Object Notation.
 
@@ -122,11 +134,14 @@ Anyways, if you have any new changes you may wish to add please ask in the issue
 If you have an implementation, send a pull request adding to this list. Please note the version tag that your parser supports in your Readme.
 
 ## v0.1 Compatible
-- Version v0.1 isn't out yet so no parsers will support it (inherently).
+- [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
+    - Supports reflective and static bindings, though doesn't support parsing IR by bytestream yet.
 
 ## In Progress
-- [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
 - [C++](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-Cxx)
+    - No progress has started
+- GO
+    - Progress has recently begun
 
 ## Editor Support
 - [Notepad++](https://github.com/DOML-DataOrientedMarkupLanguage/Notepad-Syntax)
