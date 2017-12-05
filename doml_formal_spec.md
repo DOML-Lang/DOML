@@ -33,7 +33,7 @@ The following are key words and their definitions;
 - [Binary Format](#binary-format)
 
 ## File Format
-The file ending **must** be `.doml` for *DOML* files and `.odoml` for the *IR* (similarity to `.o` files).  Furthermore, they **should** be encoded with standard UTF-8, though other parsers **could** support other formats.
+The file ending **must** be `.doml` for *DOML* files and `.odoml` for the *IR* (similarity to `.o` files).  Furthermore, they **should** be encoded with standard UTF-8, though parsers **could** support other formats.
 
 ## Other Details
 - *DOML*
@@ -42,23 +42,25 @@ The file ending **must** be `.doml` for *DOML* files and `.odoml` for the *IR* (
 - *IR*
   - **Must** be case sensitive
   - **Must** be whitespace sensitive
+  - **Should** use 2 digit numbers for their opcodes (i.e. 09 instead of 9) since the count right now is 18 (which has an opcode value of 17) and it won't go over 99 in the foreseeable future.  This just makes alignment look nice.
 
 ## Syntax
 The following details relate to the syntax.
 
 ### Comments
-The following comments **must** be supported for all *DOML* code;  Further more block comments can occur anywhere as shown below.
+The following comments **must** be supported for all *DOML* code;
 ```C
 // A line comment that terminates at the end of the line
 /* A block comment that can be nested! */
-/* 0 */ @ /* 1 */ Example /* 2 */ = /* 3 */ System.Color /* 4 */ ... /* 5 */
-/* 6 */ ; /* 7 */ .RGB(Normalised) /* 8 */ = /* 9 */ 212 /* 10 */,/* 11 */ 255 /* 12 */, /* 13 */ 150 /* 14 */,
+/* 0 */ @  Example = System.Color ... /* 1 */
+/* 2 */ .RGB->Normalised = 212, 255, 150 /* 3 */
 ```
-> However, when they are preserved they should be preserved in 'order'.  I.e. 0, 1, 2, and 3 will occur before the `new` instruction.  4, 5, 6, 7, 8, 9 will occur before any of the pushes or `set` call and after the `new` call.  And 10 and 11 will occur after the first push but before the second (i.e. after the push of 212 but before 255); 12 and 13 will occur after push of 255 but before push of 150 and 14 will occur after push of 150 but before call.
+> As shown you can have block comments before and after any line but not in any line, the numbers represent order of preservation.
 
-The following comment **must** be supported for all *IR* code;  Since no block comments exist there is no debate about where they can occur.
+The following comment **must** be supported for all *IR* code;
 ```Assembly
-; A line comment that terminates at the end of the line
+; Line Comment with no content before
+03 59 ; A line comment that terminates at the end of the line
 ```
 
 ### Types
@@ -85,6 +87,7 @@ Both *DOML* and *IR* share the same type system, all the following types **must*
   - Can't have any objects with names that match `true` or `false`.
 - Objects
   - Represents any creation object for *DOML* and for *IR* refers to a register ID.
+  - Should be represented as a pointer or similar (i.e. a reference in C#)
   
 ### DOML Specifics
 #### Creation Assignments
@@ -96,45 +99,46 @@ The `@` signifies that it is a creation assignment (you are creating a new varia
 
 Every creation assignment should form the following *IR* output;
 ```assembly
-new Library.Object ; i.e. System.Color
-regobj index       ; This is the index to place it in the registers should start at 0 and for every object increase by one
+06 Library.Object  ; i.e. System.Color
+07 index           ; This is the index to place it in the registers should start at 0 and for every object increase by one
 ```
 
 #### Set Assignments
 Set assignments are the other assignment you can perform using *DOML*.  They **must** be supported by the parser.
 The syntax is as follows;
 ```C
-; MyColor.Color(HexAndName) = 0xFF4080, "Name"
+; MyColor.Color->HexAndName = 0xFF4080, "Name"
 ```
-The `;` signifies that it is a setting assignment (you are setting a variable of a function), the identifier `MyColor` refers to the object you are invoking `Color(HexAndName)` on (which itself represents the function your invoking) and both `0xFF4080` and `"Name"` are the parameters you're passing to the function.  The `,` is to separate parameters.
+The `;` signifies that it is a setting assignment (you are setting a variable of a function), the identifier `MyColor` refers to the object you are invoking `Color->HexAndName` on (which itself represents the function your invoking) and both `0xFF4080` and `"Name"` are the parameters you're passing to the function.  The `,` is to separate parameters.
 
 > Furthermore I want to point out that normally you would separate `Hex` and `Name` to two different set assignments but in this case, it just highlighted multiple parameters.
 
-`MyColor.Color(HexAndName)` becomes a `pusho` for the register that `MyColor` exists in and a set function on `Color.HexAndName`, note that the `( ... )` became `.` the reason why is that a list of aliases exist for `.` which are; `<`, `>`, `-`, `.`, `(`, `)`, `[`, `]`, `{`, `}` so `Color(HexAndName)` is really `Color.HexAndName.` which is trimmed.
+`MyColor.Color->HexAndName` becomes a `pushobj` for the register that `MyColor` exists in and a set function on `Color.HexAndName`.
 
 Every set assignment should form the following *IR* output;
 - First, every parameter is pushed
 ```assembly
-pushint 16728192
-pushstr "Name"
+12 16728192 ; Converted to integer from hex value 0xFF4080
+15 "Name"
 ; And so on
 ```
+
 The following commands are available for using;
-- `pushint` pushes integer value of 64 bit (8 bytes)
-- `pushobj` pushes the object at the register ID equal to the parameter
-- `pushnum` pushes floating point value of 64 bit (8 bytes)
+- `pushobj` (11) pushes the object at the register ID equal to the parameter
+- `pushint` (12) pushes integer value of 64 bit (8 bytes)
+- `pushnum` (13) pushes floating point value of 64 bit (8 bytes)
   - IEEE754 format
-- `pushdec` pushes decimal value of 64 bit (8 bytes)
+- `pushdec` (14) pushes decimal value of 64 bit (8 bytes)
   - Decimal Precision
-- `pushstr` pushes a string
+- `pushstr` (15) pushes a string
   - Unicode Support
-- `pushbool` pushes a boolean value
-- `push` pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push string (depending if its single/double) if its 'true/false' it'll push bool.  So it'll never push object or decimal.
+- `pushbool` (16) pushes a boolean value
+- `push` (17) pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push string (depending if its single/double) if its 'true/false' it'll push bool.  So it'll never push object or decimal.
 
 Regardless after all values are pushed then the object is pushed and the set function is called.
 ```assembly
-pushobj index      ; i.e. pushobj 0
-set functionToCall ; i.e. set Color.Hex
+11 index      ; i.e. pushobj 0
+04 Library.Object::functionToCall ; i.e. set System.Color::RGB.Hex
 ```
 The index **should** refer to the order of colours produced but in actual fact it doesn't matter and this is why when you register an object you supply an index this just means that how you manage the indexes internally is less important since the code produced will work anywhere thanks to the requirement of supplying an index to `regobj`.  Furthermore you really **should** order your objects from 0 upwards, incrementing by one each time.
 
@@ -142,17 +146,30 @@ The index **should** refer to the order of colours produced but in actual fact i
 Embedding *IR* **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).
 > I'm not particularly happy with any suggestion I've seen so far/thought of so this will remain empty till one is approved.
 
+Currently my favourite thought for embedding IR is;
+```C
+@ Example = System.Color ...
+          .RGB = 4, 55, 255
+// .RGB = 4, 55, 255 equivalent to:
+{
+  12 4, 12 55, 12 255
+  11 0
+  04 System.Color::RGB
+}
+```
+
 ### IR Specifics
 #### Whitespace
 - Whitespace is important in *IR*
 - At least one space has to exist between the *IR* command and the parameter.
 - Each line can only contain one *IR* command and a parameter (i.e. there must be a newline between each 'Instruction')
+  - You can put multiple *IR* commands on the same line using `,`
 - Comments can only appear between 'Instructions' and at the top/bottom, i.e. they can't exist after the *IR* command and before the parameter.
 
 #### Architecture
 The Architecture of *IR* has been standardized just to maintain consistency.
 - All pushing/popping operations should operate on a stack based model
-  - It **shouldn't** be dynamically allocated since the `makespace` command should be akin to a malloc.
+  - It **shouldn't** be dynamically allocated since the `makespace` command should be akin to a malloc (i.e. allocating an array).
   - You **must** expose both the current size of the stack and the max size.
     - The current size represents how many elements have currently been pushed
     - The max size represents the total space available for elements (equal to `makespace` parameter)
@@ -166,75 +183,68 @@ The Architecture of *IR* has been standardized just to maintain consistency.
 
 #### Required Commands
 The following are all the required commands, as stated previously you **could** add more but should refrain from it since that lends itself to incompatibility.  All parsers **need** to support the following.
-- `nop` does explicitly nothing
+> For the sake of readability in the examples I'll include the name of the command rather than the opcode value, some parsers **could** support using the name vs the opcode value, but the official way is the opcode value (included next to the command name).
+
+- `nop` (00) does explicitly nothing
   - *IR*: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
-- `comment` same as nop but when emitted will emit the comment (aka it maintains user comments)
+- `comment` (01) same as nop but when emitted will emit the comment (aka it maintains user comments)
   - *IR*: `; <User Comment>` i.e. `; Create a new color`
-- `panic` panics (produces an error) if top value matches the parameter supplied
-  - *IR*: `panic <any>` i.e. `panic true` or `panic 100`
-- `makespace` reserves space in stack
+- `makespace` (02) reserves space in stack
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - *IR*: `makespace <long>` i.e. `makespace 2`
-- `makereg` reserves space in object registers
+- `makereg` (03) reserves space in object registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - *IR*: `makereg <long>` i.e. `makereg 2`
-- `set` runs the set function
-  - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`) 
+- `set` (04) runs the set function
+  - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`)
     - the functionality of having the same name for set/get/new and for different types **needs** to exist.
   - **should** also have a sizeof parameter that refers to how many parameters it pops.
   - *IR*: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
-- `copy` copies top value x times
-  - *IR*: `copy <long>` i.e. `copy 4` (which copies top value 4 times)
-- `regobj` registers top object to index given
-  - performs a pop then registers that object to index given
-  - *IR*: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
-- `unregobj` unregisters object at index
-  - set it to 'null' basically
-  - *IR*: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
-- `pushobj` pushes object from register onto stack
-  - *IR*: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
-- `pushint` pushes integer onto stack
-  - *IR*: `pushint <long>` i.e. `pushint 59`
-- `pushnum` pushes floating point onto stack
-  - *IR*: `pushnum <double>` i.e. `pushnum 32.59`
-- `pushdec` pushes decimal onto stack
-  - *IR*: `pushdec <decimal>` i.e. `pushdec 59.56`
-- `pushstr` pushes string onto stack
-  - *IR*: `pushstr <string>` i.e. `pushstr "Bob"`
-- `pushbool` pushes boolean onto stack
-  - *IR*: `pushbool <bool>` i.e. `pushbool true`
-- `push` pushes the default of type
-  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if double quote then string.
-    - Therefore won't push decimal/object
-  - *IR*: `push <bool/long/double/string>` i.e. `push true`
-- `call` performs a function call on the parameter
+- `call` (05) performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
   - **should** also have a sizeof parameter that refers to how many parameters it pushes.
   - *IR*: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
-- `new` creates a new object
+- `new` (06) creates a new object
   - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
   - **should** only ever push one value else it is breaking 'new' convention.
   - *IR*: `new <Root.Creation>` i.e. `new System.Color`
-- `pop` pops x values off the stack
+- `regobj` (07) registers top object to index given
+  - performs a pop then registers that object to index given
+  - *IR*: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
+- `unregobj` (08) unregisters object at index
+  - set it to 'null' basically
+  - *IR*: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
+- `copy` (09) copies top object
+  - The parameter represents how many times to copy top object
+  - Effectively a peek + (push x parameter)
+  - *IR*: `copy <long>` i.e. `copy 2`
+- `pop` (10) pops x values off the stack
   - Useful for when making sure stack has space.
   - *IR*: `pop <long>` i.e. `pop 3` (pops the top 3 objects off the stack)
-- `compmax` check if parameter matches the maximum stack size
-  - Pushes true if max stack size is less than the parameter value else false
-  - *IR*: `compmax <long>` i.e. `compmax 9`
-- `compsize`
-  - Pushes true if current stack size is less than the parameter value else false
-  - *IR*: `compsize <long>` i.e. `compsize 3`
-- `compreg`
-  - Pushes true if register size is less than the parameter value else false
-  - *IR*: `compreg <long>` i.e. `compreg 10`
+- `pushobj` (11) pushes object from register onto stack
+  - *IR*: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
+- `pushint` (12) pushes integer onto stack
+  - *IR*: `pushint <long>` i.e. `pushint 59`
+- `pushnum` (13) pushes floating point onto stack
+  - *IR*: `pushnum <double>` i.e. `pushnum 32.59`
+- `pushdec` (14) pushes decimal onto stack
+  - *IR*: `pushdec <decimal>` i.e. `pushdec 59.56`
+- `pushstr` (15) pushes string onto stack
+  - *IR*: `pushstr <string>` i.e. `pushstr "Bob"`
+- `pushbool` (16) pushes boolean onto stack
+  - *IR*: `pushbool <bool>` i.e. `pushbool true`
+- `push` (17) pushes the default of type
+  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if double quote then string.
+    - Therefore won't push decimal/object
+  - *IR*: `push <bool/long/double/string>` i.e. `push true`
 
 ## Interfacing with DOML
 There are a few ways to interface with *DOML*, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them). 
 
 #### Static vs Reflection Bindings
-Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often 20x slower).
+Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often quite a significant amount slower).
 
 #### Constructors
 A constructor call is expected to push a single object, the one the user wanted.  It could be a 'new' one or could refer to an already created instance.  This means that objects require an empty constructor to then later be initialised.  This is utilised in the `new` opcode.
@@ -252,9 +262,26 @@ Both getters and setters have a sizeof operation (could be a string to int map f
 - < 0 refers to atleast x parameter/s but no limit (i.e. -1 refers to atleast 1 parameter, -10 refers to atleast 10 parameters)
 
 ## Binary Format
+No parsers are required to support any of these variants they **could** support them but they are often only useful for embedded systems and short range communication as well as over the web (though that is still quite a large range of uses but its still up to the author).
+
 *DOML* is also very useful for sending data to systems like robotics or other smaller 'computer systems' that rely on a small stack to make them cheaper and more efficient.  This could also be used in applications like fitness watches or the like to send data.  No parser is required to support this since no parser is required to support parsing bytecode.
+
+Effectively the pro/con list is as such;
+- Memory Efficient: Main Variant
+  - Uses significantly less memory then the other methods
+  - For example since numbers are generally small (and often take up less than a byte or two bytes) having a single field can save you 2/3 bytes in memory resulting well in just 1/2 saved bytes per number, this is even larger for floating point values and decimals.  Though it does lose one byte per boolean.
+- Simplicity: Native Variant, the removal of a length field for all but strings makes parsing it significantly easier since it doesn't have to pass the length field (which could result in a speed up), also simplifies the data sending procedure.
+- Extremely Large Data: 7 bit length field with 1 bit decider (demonstrated in other variants)
 
 #### Main Variant
 The stream looks something like this (*note: for simplicity I've not included a footer and a header which you may or may not want to include but it often is case by case*);
-`| OP_CODE (1 Byte) | LENGTH_IN_BYTES (1 Byte) | DATA (n Byte/s) |`
+`| OP_CODE (1 Byte) | LENGTH_IN_BYTES (1 Byte) | DATA (n Bytes) |`
 Now while have a length in bytes if we can already figure out how long the data is?  Well simply put it means we can make data shorter and more compact in a lot of scenarios for example if your sending a signed integer < 128 then we can just send it as a single byte of data with the 1 byte opcode and 1 byte length, thus resulting in a 3 byte message instead of a 9 byte message if we sent it as a 64 bit integer without the length.  This does allow lengths up to 255 bytes or 2,040 bits for strings and comments which should suffice (though I don't see how one couldn't extend this length to two bytes if required), further more this even supports sending more complex messages over more packages.
+
+Do note: that strings can be quite extremely long and its suggested to replace the `LENGTH_IN_BYTES_` field with a 8 bit sequence (where the 8th bit determines if the sequence continues for another 8 bits, and you append the 7 bits to the last 7 if it does), however for the other types this is unnecessary and is only a **could** include due to the fact that having an integer/bool/floating point/decimal with more than 255 bytes is quite insane and an incredibly niche case whereas having a string of more than 255 bytes is quite possible as 255 bytes is only 127.5 characters (which is in fact only a sentence or two).
+
+#### Native Variant
+Basically just doesn't use the length field (except for strings where it would use the 8 bit decider length as explained above), and figures out the length per opcode, this requires more complicated parsing but can result in more efficient packing (though it is often more memory efficient to use the main variant as you could compact bytes more).
+
+#### Other Variants
+- You could have a 7 bit length field with the last 8th bit determining if the length continues (which would be appended to the total 14 bit byte sequence, though of course this could continue again and again).

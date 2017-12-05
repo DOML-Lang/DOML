@@ -62,10 +62,10 @@ values = value *( "," value )
 
 ;; Intermediates
 creation = "@" wsComment identifier wsComment "=" wsComment creationIdentifier wsComment [ "..." ] [ newline ]
-set = ";" wsComment [ identifier ] "." extendedIdentifier wsComment "=" wsComment values [ newline ]
+set = wsComment [ identifier ] "." extendedIdentifier wsComment "=" wsComment values [ newline ]
 
 ;; Top Level
 
 doml = 1*expression ;; 1 or more expressions
 
-expression = creation / set / (comment [ newline ])
+expression = creation / set *( ";" set ) / (comment [ newline ])
