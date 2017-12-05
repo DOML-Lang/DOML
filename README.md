@@ -1,7 +1,7 @@
 # Data Oriented Markup Language - DOML
 > By Braedon Wooding
 
-> Latest Version N/A (Approaching 0.1)
+> Latest Version 0.1
 
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
