@@ -1,7 +1,7 @@
 # Data Oriented Markup Language - DOML
 > By Braedon Wooding
 
-> Latest Version N/A (Approaching 0.1)
+> Latest Version 0.1
 
 > *Note: This spec is changing a whole lot!  Until its marked at-least 1.0 you should regard it as unstable*
 
@@ -11,9 +11,11 @@
 - It's grammar is dead simple (71 lines of ABNF compared to TOML's 219 line grammar)
 - It's easy to write and read (and parse)
 - It's fast to parse (and IR is even faster, especially if passed as byte stream)
+    - As more versions of the language appear I'll have a benchmark section for each version.
 - All the code you write will actually create real objects (though it is safe, and you define what objects can be created)
     - Not only this but you can edit properties of those objects and reference those objects both their properties and them
-- Callback system, with an aim of both static and reflective bindings.
+    - Don't fear the anonymous object creation that YAML had, this doesn't allow random object creation it only allows you to call your own code and which parts are completely up to the author.
+- Callback system, with an aim of both static and reflective binding support.
 - Whitespace insensitive
 
 ## Brief Introduction
@@ -37,19 +39,19 @@ Also I should add that it is safe (in comparison to formats like YAML) this is m
 // This is a comment
 // Construct a new System.Color
 @ Test        = System.Color ...
-;             .RGB             = 255, 64, 128 // Implicit 'array'
+              .RGB             = 255, 64, 128 // Implicit 'array'
 
 @ TheSame     = System.Color ...
-;             .RGB(Normalised) = 1, 0.25, 0.5, // You can have trailing commas
+              .RGB(Normalised) = 1, 0.25, 0.5, // You can have trailing commas
 
 @ AgainSame   = System.Color ...
-;             .RGB(Hex)        = 0xFF4080
-;             .Name            = "OtherName"
+              .RGB(Hex)        = 0xFF4080
+              .Name            = "OtherName"
 
 /* Multi Line Comment Blocks are great */
 @ Copy        = System.Color ...
-;             .RGB             = Test.R, Test.G, Test.B // Reference other objects
-;             .Name            = "Copy"
+              .RGB             = Test.R, Test.G, Test.B // Reference other objects
+              .Name            = "Copy"
 ```
 > Note: Nested multi line comments are allowed (I didn't put it in the example since github doesn't recognise DOML yet so I'm just using `C` in the meantime which doesn't support nesting).
 > > Further Note: The copy example also shows you that you can nest objects like `; Child.Parent = Parent`.
@@ -58,49 +60,48 @@ When you put this into a parser you'll get the below output (its standidized so 
 ```assembly
 ; This is the resulting bytecode from the file given
 ; This bytecode will be overriden if new bytecode is generated.
-MAKE_SPACE      4                                                  ; Reserves 4 spaces on the stack.
-MAKE_REG        4                                                  ; Reserves 4 spaces on the register.
-COMMENT         "This is a comment"                                ; USER COMMENT
-COMMENT         "Construct a new System.Color"                     ; USER COMMENT
-NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-REG_OBJ         0                                                  ; Registers top object to index 0 after popping it off the stack
-PUSH_INT        255                                                ; Pushes long integer 255 onto the stack
-PUSH_INT        64                                                 ; Pushes long integer 64 onto the stack
-PUSH_INT        128                                                ; Pushes long integer 128 onto the stack
-PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
-SET             System.Color::RGB                                  ; Runs the System.Color::RGB function
-COMMENT         "Implicit 'array'"                                 ; USER COMMENT
-NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-REG_OBJ         1                                                  ; Registers top object to index 1 after popping it off the stack
-PUSH_INT        1                                                  ; Pushes long integer 1 onto the stack
-PUSH_NUM        0.25                                               ; Pushes double 0.25 onto the stack
-PUSH_NUM        0.5                                                ; Pushes double 0.5 onto the stack
-PUSH_OBJ        1                                                  ; Pushes object in register ID: 1 onto the stack
-SET             System.Color::RGB.Normalised                       ; Runs the System.Color::RGB.Normalised function
-COMMENT         "You can have trailing commas"                     ; USER COMMENT
-NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-REG_OBJ         2                                                  ; Registers top object to index 2 after popping it off the stack
-PUSH_INT        16728192                                           ; Pushes long integer 16728192 onto the stack
-PUSH_OBJ        2                                                  ; Pushes object in register ID: 2 onto the stack
-SET             System.Color::RGB.Hex                              ; Runs the System.Color::RGB.Hex function
-PUSH_STR        "OtherName"                                        ; Pushes string "OtherName" onto the stack
-PUSH_OBJ        2                                                  ; Pushes object in register ID: 2 onto the stack
-SET             System.Color::Name                                 ; Runs the System.Color::Name function
-COMMENT         " Multi Line Comment Blocks are great "            ; USER COMMENT
-NEW             System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-REG_OBJ         3                                                  ; Registers top object to index 3 after popping it off the stack
-PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
-CALL            System.Color::R                                    ; Performs a getter call on System.Color::R and pushes the values onto the stack
-PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
-CALL            System.Color::G                                    ; Performs a getter call on System.Color::G and pushes the values onto the stack
-PUSH_OBJ        0                                                  ; Pushes object in register ID: 0 onto the stack
-CALL            System.Color::B                                    ; Performs a getter call on System.Color::B and pushes the values onto the stack
-PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
-SET             System.Color::RGB                                  ; Runs the System.Color::RGB function
-COMMENT         "Reference other objects"                          ; USER COMMENT
-PUSH_STR        "Copy"                                             ; Pushes string "Copy" onto the stack
-PUSH_OBJ        3                                                  ; Pushes object in register ID: 3 onto the stack
-SET             System.Color::Name                                 ; Runs the System.Color::Name function
+02 4                                                  ; Reserves 4 spaces on the stack.
+03 4                                                  ; Reserves 4 spaces on the register.
+01 "This is a comment"                                ; USER COMMENT
+01 "Construct a new System.Color"                     ; USER COMMENT
+06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
+07 0                                                  ; Registers top object to index 0 after popping it off the stack
+12 255                                                ; Pushes long integer 255 onto the stack
+12 64                                                 ; Pushes long integer 64 onto the stack
+12 128                                                ; Pushes long integer 128 onto the stack
+11 0                                                  ; Pushes object in register ID: 0 onto the stack
+04 System.Color::RGB                                  ; Runs the System.Color::RGB function
+01 "Implicit 'array'"                                 ; USER COMMENT
+06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
+07 1                                                  ; Registers top object to index 1 after popping it off the stack
+12 1                                                  ; Pushes long integer 1 onto the stack
+13 0.25                                               ; Pushes double 0.25 onto the stack
+13 0.5                                                ; Pushes double 0.5 onto the stack
+01 "You can have trailing commas"                     ; USER COMMENT
+11 1                                                  ; Pushes object in register ID: 1 onto the stack
+04 System.Color::RGB.Normalised                       ; Runs the System.Color::RGB.Normalised function
+06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
+07 2                                                  ; Registers top object to index 2 after popping it off the stack
+12 16728192                                           ; Pushes long integer 16728192 onto the stack
+11 2                                                  ; Pushes object in register ID: 2 onto the stack
+04 System.Color::RGB.Hex                              ; Runs the System.Color::RGB.Hex function
+15 "OtherName"                                        ; Pushes string "OtherName" onto the stack
+11 2                                                  ; Pushes object in register ID: 2 onto the stack
+04 System.Color::Name                                 ; Runs the System.Color::Name function
+01 " Multi Line Comment Blocks are great "            ; USER COMMENT
+06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
+07 3                                                  ; Registers top object to index 3 after popping it off the stack
+11 0                                                  ; Pushes object in register ID: 0 onto the stack
+05 System.Color::R                                    ; Performs a getter call on System.Color::R and pushes the values onto the stack
+11 0                                                  ; Pushes object in register ID: 0 onto the stack
+05 System.Color::G                                    ; Performs a getter call on System.Color::G and pushes the values onto the stack
+11 0                                                  ; Pushes object in register ID: 0 onto the stack
+05 System.Color::B                                    ; Performs a getter call on System.Color::B and pushes the values onto the stack
+11 3                                                  ; Pushes object in register ID: 3 onto the stack
+04 System.Color::RGB                                  ; Runs the System.Color::RGB function
+15 "Copy"                                             ; Pushes string "Copy" onto the stack
+11 3                                                  ; Pushes object in register ID: 3 onto the stack
+04 System.Color::Name                                 ; Runs the System.Color::Name function
 ```
 I won't go into great detail about the IR, but effectively it is similar to assembly; the `;` is a line comment, each command is seperated by a line and has one parameter (only one).  Its stack based but uses a statically defined stack for efficiency (literally the speed comparison is insane).
 
@@ -135,13 +136,14 @@ If you have an implementation, send a pull request adding to this list. Please n
 
 ## v0.1 Compatible
 - [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
-    - Supports reflective and static bindings, though doesn't support parsing IR by bytestream yet.
+    - Supports reflective and static bindings, supports parsing IR by byte stream in both native and main variants.
+- [GO](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-GO)
+    - Progress has recently begun
+    - Buggy but allows reading DOML into IR only
 
 ## In Progress
 - [C++](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-Cxx)
     - No progress has started
-- GO
-    - Progress has recently begun
 
 ## Editor Support
 - [Notepad++](https://github.com/DOML-DataOrientedMarkupLanguage/Notepad-Syntax)
