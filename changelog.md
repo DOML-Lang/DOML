@@ -4,6 +4,11 @@ This changelog will contain all the various changes to the grammar and syntax of
 
 > *Note:* There are a few large steps such as Version 0.1->0.2, this was mainly done when there was very few people working on the project (originally only one) and it was easier then having to constantly release new versions.
 
+## Version 0.21
+
+Rollback on the dictionaries!
+- Dictionaries have been removed, it complicated the pushing code due to the requirement for two values, meaning it resulted in a general slowdown of the code across multiple versions (GO/C# being the ones tested) furthermore it was decided that a map went against the real idea of DOML and needs to be rethinked (was only ever really added due to arrays being added).
+
 ## Version 0.2
 
 Version 0.2 didn't bring any massive changes but it did bring arrays and dictionaries.
@@ -11,9 +16,9 @@ Version 0.2 didn't bring any massive changes but it did bring arrays and diction
 - Arrays
   - `X.Y = [1, 2, 3]`
   - `18/pushvec (int)` command added
-  - `19/pushmap (int)` command added
 - Dictionaries
   - `X.Y = ["K": 1, "B": 2, "C": 3]`
+  - `19/pushmap (int)` command added
 - Short Function calls
   - `@ X->Y = 2` which translates to `@ _ = X.X ... .Y = 2`
     - i.e. `@ System->CallWithInt = 9` is equivalent to `@ _ = System.System ... .CallWithInt = 9`
