@@ -57,15 +57,17 @@ string = quote *(text / (backslash quote)) quote ;; "ANY" (including the opportu
 boolean = %s"true" / %s"false" ;; true or false
 lookup = identifier [ "." extendedIdentifier ]
 
-value = integer / float / string / boolean / lookup
+value = integer / float / string / boolean / lookup / vectorOrMap
 values = value *( "," value )
+mapValues = value ":" value *( "," value ":" value )
+
+vectorOrMap = "[" values / mapValues "]"
 
 ;; Intermediates
-creation = "@" wsComment identifier wsComment "=" wsComment creationIdentifier wsComment [ "..." ] [ newline ]
+creation = "@" wsComment identifier wsComment "=" wsComment creationIdentifier [ [ "->" identifier ] "(" values ")" ] wsComment [ "..." ] [ newline ]
 set = wsComment [ identifier ] "." extendedIdentifier wsComment "=" wsComment values [ newline ]
 
 ;; Top Level
 
 doml = 1*expression ;; 1 or more expressions
-
 expression = creation / set *( ";" set ) / (comment [ newline ])
