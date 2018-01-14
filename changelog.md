@@ -10,6 +10,8 @@ Version 0.2 didn't bring any massive changes but it did bring arrays and diction
 
 - Arrays
   - `X.Y = [1, 2, 3]`
+  - `18/pushvec (int)` command added
+  - `19/pushmap (int)` command added
 - Dictionaries
   - `X.Y = ["K": 1, "B": 2, "C": 3]`
 - Short Function calls
