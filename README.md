@@ -163,7 +163,9 @@ If you have an implementation, send a pull request adding to this list. Please n
 ## v0.1 Compatible
 
 - [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
-  - Supports reflective and static bindings, supports parsing IR by byte stream in both native and main variants.
+    - Supports reflective and static bindings, supports parsing IR by byte stream in both native and main variants.
+    - Uses .Net Standard 1.3 (thus supporting Core 1.0+, Unity if using 4.6 compiler option, .Net Framework 4.6+, and UWP 10.0)
+        - This is the lowest we can have the standard (since we require certain libraries that exist at 1.3+), thus we are sorry if this doesn't suit your particular project but we can't push back the standard any further.
 - [GO](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-GO)
   - Progress has recently begun
   - Buggy but allows reading DOML into IR only
