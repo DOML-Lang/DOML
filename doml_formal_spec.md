@@ -26,7 +26,7 @@ The following are key words and their definitions;
   - [Creation Assignments](#creation-assignments)
   - [Set Assignments](#set-assignments)
     - [Short Form Set Assignments](#short-form-set-assignments)
-    - [Arrays / Dictionaries](#arrays_dictionaries)
+    - [Arrays / Dictionaries](#arraysdictionaries)
   - [Embed IR](#embed-ir)
 - [IR Specifics](#ir-specifics)
   - [Whitespace](#whitespace)
