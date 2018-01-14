@@ -26,7 +26,7 @@ The following are key words and their definitions;
   - [Creation Assignments](#creation-assignments)
   - [Set Assignments](#set-assignments)
     - [Short Form Set Assignments](#short-form-set-assignments)
-    - [Arrays / Dictionaries](#arraysdictionaries)
+    - [Arrays](#arrays)
   - [Embed IR](#embed-ir)
 - [IR Specifics](#ir-specifics)
   - [Whitespace](#whitespace)
@@ -168,8 +168,6 @@ The following commands are available for using;
 - `push` (17) pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push string (depending if its single/double) if its 'true/false' it'll push bool. So it'll never push object or decimal.
 - `pushvec` (18) pushes an empty static array onto the stack (type is determinent of first type) the parameter corresponds to how large the array is.
   - This also changes all push commands to now rather index the array starting at 0 and working up to the length.
-- `pushmap` (19) pushes an empty hash map/dictionary onto the stack, the parameter corresponds to the capacity of the map/dictionary.
-  - This also changes all push commands to now rather first create a key, then secondly set it (effectively will pop twice in a row till reach capacity).
 
 Regardless after all values are pushed then the object is pushed and the set function is called.
 
@@ -208,9 +206,9 @@ Produces the exact same IR code as;
 
 Due to the reusing of system, though the standard is to keep these statements short and not overuse it.
 
-#### Arrays/Dictionaries
+#### Arrays
 
-Since they are more complicated then other things I'll include in a bit more depth how they are done, they are done in such a way to balance speed/memory and simplicity. Only two more IR commands were added with the standard push commands becoming index commands when you have effectively 'activated' either a vector/map mode (by calling the command), the arrays/dictionaries themselves should not be created till the full type signature is known (since the static arrays are singular type and so are the dictionaries - this is to keep inline with the majority of coding languages), though of course they could be created before if the types aren't needed (i.e. python).
+Since they are more complicated then other things I'll include in a bit more depth how they are done, they are done in such a way to balance speed/memory and simplicity. Only two more IR commands were added with the standard push commands becoming index commands when you have effectively 'activated' a vector mode (by calling the command), the arrays themselves should not be created till the full type signature is known (since the static arrays are singular type - this is to keep inline with the majority of coding languages), though of course they could be created before if the types aren't needed (i.e. python).
 
 Effectively the following code; `Test.RGB = [255, 125, 245]` (noting that this variant requires an array rather then 3 separate values, and also note that an array =/= a list of parameters i.e. `[255, 125, 245]` =/= `255, 125, 245`).  The code would generate the following IR;
 
@@ -227,26 +225,6 @@ Effectively the following code; `Test.RGB = [255, 125, 245]` (noting that this v
 ```
 
 Key note: that effectively the system would recognise that its now utilising arrays and would change the functionality, this is to keep it simple.   It also wouldn't require any stack space for the three integers (a big penalty to the other methods) and wouldn't require the pushing and popping to create the array at the end (another big penalty to other methods).
-
-Dictionaries are similar but the following code; `Test.BigNumbers = [ 255 : true, 1 : false, 3939 : true ]` would produce the following IR (separated since it can be confusing at first);
-
-```Assembly
-19    3     ; Create a dictionary with length 3
-
-12    255   ; Push the first keypair
-16    true
-
-12    1     ; Push the second keypair
-16    false
-
-12    3939  ; Push the third keypair
-16    true
-
-11    0                 ; Push the first object onto the stack
-04    System.Color::RGB ; Set call
-```
-
-Decides types after first two pushes, then will continue the pattern (length * 2, due to requiring both key and value).
 
 #### Embedding IR
 
@@ -357,12 +335,6 @@ The following are all the required commands, as stated previously you **could** 
     - Decides type after first 'push' therefore a length of 0 is invalid (can't determine type)!
       - i.e. `pushvec 0` is invalid and not an appropriate value.
   - *IR*: `pushvec <long>` i.e. `pushvec 10`
-- `pushmap` (19) pushes map onto stack (dictionary)
-  - *Note:* changes push commands to index commands up to the count of the map.
-    - Though it will have to take two push commands at a time, one for the key; other for the value
-      - Decides type after first two 'push's therefore a length of 0 is invalid (can't determine type)!
-        - i.e. `pushmap 0` is invalid and not an appropriate value and will return an error if in safe mode and do un-defined behaviour in unsafe (most likely nothing as a map counter will probably be implemented).
-  - *IR*: `pushmap <long>` i.e. `pushmap 10`
 
 ## Interfacing with DOML
 
