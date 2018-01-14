@@ -57,11 +57,10 @@ string = quote *(text / (backslash quote)) quote ;; "ANY" (including the opportu
 boolean = %s"true" / %s"false" ;; true or false
 lookup = identifier [ "." extendedIdentifier ]
 
-value = integer / float / string / boolean / lookup / vectorOrMap
+value = integer / float / string / boolean / lookup / vector
 values = value *( "," value )
-mapValues = value ":" value *( "," value ":" value )
 
-vectorOrMap = "[" values / mapValues "]"
+vector = "[" values "]"
 
 ;; Intermediates
 creation = "@" wsComment identifier wsComment "=" wsComment creationIdentifier [ [ "->" identifier ] "(" values ")" ] wsComment [ "..." ] [ newline ]
