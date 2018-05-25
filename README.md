@@ -31,17 +31,18 @@ Since I want to keep this introduction short (the code examples will act as bett
 
 ```C
 // Construct a new System.Color
-Test = Color {
+Test : Color {
   .RGB = 255, 64, 128,
 }
 
 // Constructors do exist
-TheSame = Color::Normalized(1, 0.25, 0.5) {
+// the parameter names are purely for your own merit, they will check if its possible however (will be possible on most systems)
+TheSame : Color::Normalized(r: 1, g: 0.25, b: 0.5) {
   .Name = "Bob"
 }
 
 // You can also just declare an object without scoping it
-Other = Color
+Other : Color
 Other.Name = "X"
 
 // You can also edit the original Test at any point EITHER by doing
@@ -52,7 +53,7 @@ Test.{
 }
 
 // You can declare arrays like
-ArrayObject = [Color] {
+ArrayObject : [Color] {
   ::Normalized(0.95, 0.55, 0.22){
     .Name = "Other", // Trailing commas are always allowed
   },
@@ -67,13 +68,13 @@ ArrayObject = [Color] {
 }
 
 // You can also copy objects by doing
-NewObj = Other
+NewObj : Color = Other
 
 // Or can do something like
 NewObj.Name = ArrayObject[0].Name
 
 // You can also declare arrays inside object definitions
-MyTags = Tags {
+MyTags : Tags {
   // Note: all have to be of the same type
   .Tags = ["Hello", "Other", "bits", "bobs", "kick"]
   .Name = MyTags.Tags[0] // And indexing them works like you would think
@@ -81,10 +82,9 @@ MyTags = Tags {
 
 // You can declare dictionaries like
 // Dictionaries within objects can also be created similarly
-MyDictionary = [string : Color] {
+MyDictionary : [String : Color] {
     { 
-      "Bob" : Color::Normalzed(0.5, 1.2, 3.5)
-      {
+      "Bob" : Color::Normalzed(0.5, 1.2, 3.5) {
         .Name = "Bob's Color"
       }
     },
@@ -143,6 +143,43 @@ When you put this into a parser you'll get the below output (its standidized so 
 
 I won't go into great detail about the IR, but effectively it is similar to assembly; the `;` is a line comment, each command is seperated by a line and has one parameter (only one). You can place multiple statements on a line by using a `,` to separate them.
 
+## Shortened Format
+
+Sometimes the problem with JSON is that it just bulks up so much, so DOML provides a few ways to shorten your scripts;
+
+An initial doml script;
+```C
+Wizard : Character {
+  .Name = "Wizard the Great",
+  .Stats = {
+    { Character.Stat.HP : 2 },
+    { Character.Stat.AP : 9 },
+    { Character.Stat.ST : 3 },
+    // And so on
+  },
+  .Spells = [
+      Spell::Fireball(),
+      Spell::New() {
+        .Name = "Polymorphism",
+        .EffectScript = "Polymorphism.lua",
+      }
+  ],
+}
+```
+You could reduce this down to;
+```C
+Wizard = Character::New("Wizard the Great") {
+  // If the object is a enum like in this case, you can scope it like (works with some other things too)
+  .Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
+  .Spells : [Spell] = [Fireball(), NewLua(name: "Polymorphism", script: "Polymorphism.Lua")]
+}
+```
+As you can see it is partly due to building a good API and partly due to a mix of other tools even if NewLua didn't exist that spell call would just be;
+```C
+  .Spells : [Spell] = [Fireball(), New() { .Name = "Polymorphism, .EffectScript = "Polymorphism.Lua" }]
+```
+Basically as vertical space often makes things seem longer than horizontal we allow you to expand horizontally quite nicely.
+
 ## Types
 
 | Type          | Example Values                        | Details (all suffixes are case insensitive)        |
@@ -162,7 +199,7 @@ I won't go into great detail about the IR, but effectively it is similar to asse
 | Type          | Example                               | Details (all suffixes are case insensitive)        |
 | ------------- | ------------------------------------- | -------------------------------------------------- |
 | Arrays        | \[1, 2, 3, 4\]                        | All have to be of the same type                    |
-| Dictionary    | { { "X", 2 }, { "Y", 9 } }            | All keys/values have to be same type (key != value)|
+| Dictionary    | { { "X" : 2 }, { "Y" : 9 } }          | All keys/values have to be same type (key != value)|
 
 ## Comparison with other formats
 
