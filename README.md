@@ -17,6 +17,7 @@ Since I want to keep this introduction short (the code examples will act as bett
   - The IR isn't meant to be writable by humans though it easily could be, it consists of a series of lines with each line having an opcode value and a parameter.
   - Parsing IR is about 3.333...x faster (or rather only 30% of the original value)
     - That is if parsing plain text IR, if you parse the binary stream version it is significantly faster
+    - This is seen [here](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net#benchmarks)
   - This IR is transferable to any DOML parser (allowing you to create the produced IR through some web API when you push to your remote, then place the IR along with the repo for compiling + packaging)
 - It's extremely easy to read and write (compared to JSON being easy to read but hard to write, and XML being hard to read/write)
 - Whitespace insensitive (you can remove every single whitespace if wished, there is no required whitespace since there is no keywords)
