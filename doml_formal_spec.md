@@ -26,8 +26,10 @@ The following are key words and their definitions;
 - [DOML Specifics](#doml-specifics)
   - [Constructors](#constructors)
   - [Assignments](#assignments)
-    - [Short Form Set Assignments](#short-form-set-assignments)
-    - [Arrays](#arrays)
+  - [Arrays](#arrays-of-objects)
+  - [Maps](#maps)
+  - [Calls](#calls)
+  - [Accessing Values](#accessing-values)
   - [Embed IR](#embed-ir)
 - [IR Specifics](#ir-specifics)
   - [Whitespace](#whitespace)
@@ -206,7 +208,7 @@ A few notes about this structure;
 - Furthernote: `quickpush`/`quickcall` are efficient ways to perform small calls on objects, they avoid pushing onto the stack and can short circuit any indirection calls to properties/fields by directly editing the value there; often resulting in a speed increase.  Quickpush can be modified by the user to expand its size as to allow larger functions and can also split up calls like `RGB = p1, p2, p3` into a series of 3 quick pushes and quick calls.
 - push calls can have multiple parameters the `1` just means a single object, but they all have to have the same type.
 
-#### Arrays
+#### Arrays of Objects
 There are two cases where arrays come into form in DOML; the first is arrays of objects and the second is parameter arrays.
 
 The first, arrays of objects;
@@ -242,6 +244,48 @@ Now interestingly enough the IR produced by above actually doesn't create an arr
 
 Now this is done because in reality array objects don't really need to be an array since one it complicates the IR and two its just a nice way to express multiple objects as belonging to a single 'set'.  When referring to each object in IR comments you should reffer to it as `A-x` or `A[x]` with the dash/brackets to signify it is an array.
 
+#### Object Arrays
+You can create an object array by declaring it as such;
+```C
+// 1. Declaring implicit size
+A.B = [o1, ..., on]
+// 2. Declaring an explicit size
+A.B : [n]Type {
+  o1, ..., on
+}
+A.B : [n]Type
+A.B[0] = o1
+...
+A.B[n] = on
+```
+
+Both declares an array of objects of the same type, this **should** implemented as a static array but in languages like Python which don't understand the concept of static arrays implementing it as a dynamic is still compliant.  However, going outside the explicit bounds or implicit ones (n in this case) **must** not be supported.
+
+Note: they should decompose to the same code however optimisations may be performed converting the first option to a single push call that can be cached till you push the array saving a set of copies, or that you can perform array like copies that are more efficient then typical ways.  The second one could be optimised.  Optimisations don't interact with compliance so you are free to optimise calls as long as the result is the same.
+
+You can edit elements of an array like;
+```C
+A.B[0] = 2
+A.B[1] = A.B[2]
+```
+
+##### Resultant IR
+
+This is a little more complicated then other IR due to the level of optimisation possible SO I'll outline the basic structure, and in the IR section I'll cover some of the optimisations possible;
+
+```assembly
+pusharray typeID n
+setarray typeID 0 o1
+...
+setarray typeID n on
+```
+
+You can perform a wide 'setarray' by doing a 'arraycpy' like, which is significantly more efficient;
+```assembly
+pusharray typeID n
+arraycpy typeID n o1 o2 ... on
+```
+
 #### Maps
 
 
@@ -249,7 +293,6 @@ Now this is done because in reality array objects don't really need to be an arr
 
 
 #### Calls
-
 
 
 #### Embedding IR
