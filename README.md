@@ -38,7 +38,7 @@ Test : Color {
 // Constructors do exist
 // the parameter names are purely for your own merit, they will check if its possible however (will be possible on most systems)
 TheSame : Color::Normalized(r: 1, g: 0.25, b: 0.5) {
-  .Name = "Bob"
+  Name = "Bob"
 }
 
 // You can also just declare an object without scoping it
@@ -49,21 +49,21 @@ Other.Name = "X"
 Test.R = 50
 // Or by doing
 Test.{
-  .G = 128
+  G = 128
 }
 
 // You can declare arrays like
 ArrayObject : [Color] {
   ::Normalized(0.95, 0.55, 0.22){
-    .Name = "Other", // Trailing commas are always allowed
+    Name = "Other", // Trailing commas are always allowed
   },
   // You can still do an empty construction
   ::() {
-    .RGB = 50, 25, 125,
+    RGB = 50, 25, 125,
   },
   // And thus you can leave out the ::()
   {
-    .RGB = 50, 25, 125,
+    RGB = 50, 25, 125,
   },
 }
 
@@ -76,18 +76,18 @@ NewObj.Name = ArrayObject[0].Name
 // You can also declare arrays inside object definitions
 MyTags : Tags {
   // Note: all have to be of the same type
-  .Tags = ["Hello", "Other", "bits", "bobs", "kick"]
-  .Name = MyTags.Tags[0] // And indexing them works like you would think
+  Tags = ["Hello", "Other", "bits", "bobs", "kick"]
+  Name = MyTags.Tags[0] // And indexing them works like you would think
 }
 
 // You can declare dictionaries like
 // Dictionaries within objects can also be created similarly
 MyDictionary : [String : Color] {
-    { 
-      "Bob" : Color::Normalzed(0.5, 1.2, 3.5) {
-        .Name = "Bob's Color"
-      }
-    },
+  { 
+    "Bob" : Color::Normalzed(0.5, 1.2, 3.5) {
+      Name = "Bob's Color"
+    }
+  },
 }
 ```
 
