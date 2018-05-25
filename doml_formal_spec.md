@@ -22,9 +22,10 @@ The following are key words and their definitions;
 - [Syntax](#syntax)
 - [Comments](#comments)
 - [Types](#types)
+- [Collection Types](#collection-types)
 - [DOML Specifics](#doml-specifics)
-  - [Creation Assignments](#creation-assignments)
-  - [Set Assignments](#set-assignments)
+  - [Constructors](#constructors)
+  - [Assignments](#assignments)
     - [Short Form Set Assignments](#short-form-set-assignments)
     - [Arrays](#arrays)
   - [Embed IR](#embed-ir)
@@ -46,7 +47,7 @@ The following are key words and their definitions;
 
 ## File Format
 
-The file ending **must** be `.doml` for *DOML* files and `.odoml` for the *IR* (similarity to `.o` files). Furthermore, they **should** be encoded with standard UTF-8, though parsers **could** support other formats.
+The file ending **must** be `.doml` for *DOML* files, and if a file is purely IR it can either have `.doml` or `.odoml`. Furthermore, they **must** be encoded with standard UTF-8, though parsers **could** support other formats.
 
 ## Other Details
 
@@ -67,164 +68,189 @@ The following details relate to the syntax.
 The following comments **must** be supported for all *DOML* code;
 
 ```C
-// A line comment that terminates at the end of the line
-/* A block comment that can be nested! */
-/* 0 */ @  Example = System.Color ... /* 1 */
-/* 2 */ .RGB->Normalised = 212, 255, 150 /* 3 */
+// A
+X : Y() // B
 ```
-
-> As shown you can have block comments before and after any line but not in any line, the numbers represent order of preservation.
 
 The following comment **must** be supported for all *IR* code;
 
 ```Assembly
-; Line Comment with no content before
-03 59 ; A line comment that terminates at the end of the line
+; A
+25 59 48 32 ; B
 ```
 
 ### Types
 
 Both *DOML* and *IR* share the same type system, all the following types **must** be implemented.
 
-- Integers
+- Integers (typeID: 0)
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other.
-- Floating Point
+- Floating Point (typeID: 1)
   - Double Precision 64 bits (8 bytes), by default
   - IEEE 754
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other and can't occur next to the `.` (if there is one).
-- Decimals
+- Decimals (typeID: 2)
   - `$` prefix (note the `+` or `-` goes before the `$` prefix i.e. `-$40.95` or `+$59.54`/`$59.54`).
   - Double Precision 64 bit (8 bytes) by default.
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other, also have to occur after the `$` and can't occur next to the `.` (if there is one).
-- String
+- String (typeID: 3)
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
-  - You can insert a unicode character like `\u459\` (insert unicode character 459)
-- Boolean
+  - You can insert a unicode character like `\u4e00` (insert unicode character 4e00 which is; 一)
+- Boolean (typeID: 4)
   - `true` and `false`
-  - Can't have any objects with names that match `true` or `false`.
-- Objects
+  - Thus **can't** have any objects with names that match `true` or `false`.
+- Objects (typeID: 5)
   - Represents any creation object for *DOML* and for *IR* refers to a register ID.
-  - Should be represented as a pointer or similar (i.e. a reference in C#)
+  - **Should** be represented as a pointer or similar (i.e. a reference in C#).
+  
+### Collection Types
+
+Both *DOML* and *IR* have support for collections and thus the following types **must** be implemented.
+
+- Dictionaries/Maps
+  - The key type **must** remain constant, and so **must** the value type.
+- Arrays
+  - Array elements **must** all have the same type.
 
 ### DOML Specifics
 
-#### Creation Assignments
+The following sets of rules apply only to *DOML* code.
 
-Creation assignments are one of the two assignments you can perform using *DOML*. They **must** be supported by the parser. The syntax is as follows;
+#### Style of syntax
 
+All DOML sections below will follow the following style;
 ```C
-@ MyColor = System.Color
+// #. <Description>
+<Example1>; <Example2>; ...; <ExampleN>;
 ```
+Then below each number will be explained thorougly, the `;` is to indicate a new way to present that example that has the SAME result.
 
-The `@` signifies that it is a creation assignment (you are creating a new variable), the identifier `MyColor` can be used below that line to refer to the object created, `System.Color` is the function to call which is expected to push an object onto the stack.
+All IR sections below will follow the following style;
+```assembly
+; #. <Description>
+<IR Code> <Parameters>
+```
+There is typically just one way to do things in IR, so no need to chain multiple to show off the syntatical stuff.  Also a few symbols may pop up on the IR that mean different things;
 
-Every creation assignment should form the following *IR* output;
+- `#`: means a register ID (dependent on the previous IR commands before)
+
+#### Constructors
+
+*DOML* has the following syntax for constructors;
+```C
+// 1. Standard
+A : B::(); A : B; A : B::B();
+
+// 2. Using a constructor
+A : B::C(n1: p1, n2: p2, n3: p3, ..., nn: pn);
+```
+1) Creates an object A of type B with standard constructor.
+2) Creates an object A of type B with constructor C (with parameters a...n, with labels n1..nn).
+
+Notes:
+  - Constructor overloading is NOT supported.
+  
+##### Resultant IR
+
+The above code generates the following IR;
 
 ```assembly
-06 Library.Object  ; i.e. System.Color
-07 index           ; This is the index to place it in the registers should start at 0 and for every object increase by one
+; 1. Standard
+newobj B B # 0
+; 2. Using a constructor
+newobj B C # n p1 p2 p3 ... pn
 ```
+1) Creates an object of type B calling constructor B (aka the default) at register '#' (at runtime register '#' or -1 means any, but in this case it does mean dependent on previous values).  With 0 parameters.
+2) Creates an object of type B calling constructor C at register '#' (same reason as above).  'n' parameters, with the parameters following it (note: `...` isn't a parameter it is just to show that there are pn parameters).
+  - note: the labels aren't expressed in IR.
 
-#### Set Assignments
-
-Set assignments are the other assignment you can perform using *DOML*. They **must** be supported by the parser.
-The syntax is as follows;
+#### Assignments
 
 ```C
-; MyColor.Color->HexAndName = 0xFF4080, "Name"
+// 1. Accessing and setting an element
+A.B = p1, p2, ..., pn
+A.{ B = p1, p2, ..., pn }
+A : C() { B = p1, p2, ..., pn }
+
+// 2. Performing a single assignment
+A.B = p1
+A.{ B = p1 }
+A : C() { B = p1 }
 ```
+1) Assigns objects p1, p2, ..., pn to B of A.  They all do the same thing in the end (that is if A is always of type D).
+  - Note: p1..pn don't have to be of the same type.
 
-The `;` signifies that it is a setting assignment (you are setting a variable of a function), the identifier `MyColor` refers to the object you are invoking `Color->HexAndName` on (which itself represents the function your invoking) and both `0xFF4080` and `"Name"` are the parameters you're passing to the function. The `,` is to separate parameters.
-
-> Furthermore I want to point out that normally you would separate `Hex` and `Name` to two different set assignments but in this case, it just highlighted multiple parameters.
-
-`MyColor.Color->HexAndName` becomes a `pushobj` for the register that `MyColor` exists in and a set function on `Color.HexAndName`.
-
-Every set assignment should form the following *IR* output;
-
-- First, every parameter is pushed
+##### Resultant IR
 
 ```assembly
-12 16728192 ; Converted to integer from hex value 0xFF4080
-15 "Name"
-; And so on
+; 1. Accessing and setting an element
+push typeID 1 p1
+push typeID 1 p2
+...
+push typeID 1 pn
+calln # C B n
+
+; 2. Performing a single assignment
+quickpush typeID 1 p1
+quickcall # C B 1
 ```
+1) Pushes 'n' objects onto the stack before collapsing 'n' objects to perform call.
+2) Performs a smart push on an object then performs a quick call with just one previous object.
 
-The following commands are available for using;
-
-- `pushobj` (11) pushes the object at the register ID equal to the parameter
-- `pushint` (12) pushes integer value of 64 bit (8 bytes)
-- `pushnum` (13) pushes floating point value of 64 bit (8 bytes)
-  - IEEE754 format
-- `pushdec` (14) pushes decimal value of 64 bit (8 bytes)
-  - Decimal Precision
-- `pushstr` (15) pushes a string
-  - Unicode Support
-- `pushbool` (16) pushes a boolean value
-- `push` (17) pushes whatever it can 'see', this means that it'll push integer if passed a number without a '.', and push floating point if passed a number with '.', else if it is quoted it'll push string (depending if its single/double) if its 'true/false' it'll push bool. So it'll never push object or decimal.
-- `pushvec` (18) pushes an empty static array onto the stack (type is determinent of first type) the parameter corresponds to how large the array is.
-  - This also changes all push commands to now rather index the array starting at 0 and working up to the length.
-
-Regardless after all values are pushed then the object is pushed and the set function is called.
-
-```assembly
-11 index      ; i.e. pushobj 0
-04 Library.Object::functionToCall ; i.e. set System.Color::RGB.Hex
-```
-
-The index **should** refer to the order of colours produced but in actual fact it doesn't matter and this is why when you register an object you supply an index this just means that how you manage the indexes internally is less important since the code produced will work anywhere thanks to the requirement of supplying an index to `regobj`. Furthermore you really **should** order your objects from 0 upwards, incrementing by one each time.
-
-##### Short Form Set Assignments
-
-This is mainly just in-place to effectively 'register' objects created.  The following;
-
-```C
-@ Register = System.System ...
-           .X = Y
-```
-
-Can be shortened down to `@ System->X = Y`, `System.System` can be anything though it has to be in format `X.X`, the system will only ever create one register and just re-use it across all instances of this so don't worry about it being inefficient i.e. the following;
-
-```C
-@ Register = System.System ...
-           .A = B
-           .C = D
-           .E = F
-```
-
-Produces the exact same IR code as;
-
-```C
-@ System->A = B
-@ System->C = D
-@ System->E = F
-```
-
-Due to the reusing of system, though the standard is to keep these statements short and not overuse it.
+A few notes about this structure;
+- The type ID follows the ones stated in the [Types](#types) section, note: this doesn't work for arrays/maps a different command is for that.
+- Furthernote: `quickpush`/`quickcall` are efficient ways to perform small calls on objects, they avoid pushing onto the stack and can short circuit any indirection calls to properties/fields by directly editing the value there; often resulting in a speed increase.  Quickpush can be modified by the user to expand its size as to allow larger functions and can also split up calls like `RGB = p1, p2, p3` into a series of 3 quick pushes and quick calls.
+- push calls can have multiple parameters the `1` just means a single object, but they all have to have the same type.
 
 #### Arrays
+There are two cases where arrays come into form in DOML; the first is arrays of objects and the second is parameter arrays.
 
-Since they are more complicated then other things I'll include in a bit more depth how they are done, they are done in such a way to balance speed/memory and simplicity. Only two more IR commands were added with the standard push commands becoming index commands when you have effectively 'activated' a vector mode (by calling the command), the arrays themselves should not be created till the full type signature is known (since the static arrays are singular type - this is to keep inline with the majority of coding languages), though of course they could be created before if the types aren't needed (i.e. python).
+The first, arrays of objects;
+```C
+// 1. Implicit Size
+A : []B { 
+  ::(){ D = a1, ..., an },
+  ::C(p1, ..., pn){ D = a1, ..., an },
+  ...
+  { D = a1, ..., an },
+}
 
-Effectively the following code; `Test.RGB = [255, 125, 245]` (noting that this variant requires an array rather then 3 separate values, and also note that an array =/= a list of parameters i.e. `[255, 125, 245]` =/= `255, 125, 245`).  The code would generate the following IR;
+// 2. Explicit Size and assignment
+A : [3]B
 
-```Assembly
-18    3     ; Create a static array with length 3
-
-; Push the 3 integers (which acts as index operations rather than pushes)
-12    255
-12    125
-12    245
-
-11    0                 ; Push the first object onto the stack
-04    System.Color::RGB ; Set call
+A[0] : B::() {
+  D = a1, ..., an
+}
+A[1] : B::C(p1, ..., pn) {
+  D = a1, ..., an
+}
+A[2] : B {
+  D = a1, ..., an
+}
 ```
+1) Assigns an implicitly sized array and assigns each index to a member; you can also assign a length if you want and set just some of the elements.  Elements are typesafe and bounded, so you can't go outside the array or any silliness like that.
 
-Key note: that effectively the system would recognise that its now utilising arrays and would change the functionality, this is to keep it simple.   It also wouldn't require any stack space for the three integers (a big penalty to the other methods) and wouldn't require the pushing and popping to create the array at the end (another big penalty to other methods).
+2) Assigns an explicit size and the assigns each element follows same rules as above.
+
+##### Resultant IR
+
+Now interestingly enough the IR produced by above actually doesn't create an array, and follows the same as if you defined something like `A1, A2, A3, ... An`.  HOWEVER when referenced it is still treated like an array just the IR has no concept of object arrays (does have concept of array objects however) this means that something like `D = A` where A is defined as something like above, would decompose to `D = [A1, A2, ..., An]` in terms of the IR (below will be how arrays exist in IR).
+
+Now this is done because in reality array objects don't really need to be an array since one it complicates the IR and two its just a nice way to express multiple objects as belonging to a single 'set'.  When referring to each object in IR comments you should reffer to it as `A-x` or `A[x]` with the dash/brackets to signify it is an array.
+
+#### Maps
+
+
+#### Accessing Values
+
+
+#### Calls
+
+
 
 #### Embedding IR
 
