@@ -286,6 +286,8 @@ pusharray typeID n
 arraycpy typeID n o1 o2 ... on
 ```
 
+Accessing arrays are discussed under accessing values.
+
 #### Maps
 
 
