@@ -53,7 +53,7 @@ Test.{
 }
 
 // You can declare arrays like
-ArrayObject : [Color] {
+ArrayObject : []Color {
   ::Normalized(0.95, 0.55, 0.22){
     Name = "Other", // Trailing commas are always allowed
   },
