@@ -30,7 +30,7 @@ Since I want to keep this introduction short (the code examples will act as bett
 ## A quick overview
 
 ```C
-// Construct a new System.Color
+// Construct a new Color
 Test : Color {
   .RGB = 255, 64, 128,
 }
@@ -76,8 +76,8 @@ NewObj.Name = ArrayObject[0].Name
 // You can also declare arrays inside object definitions
 MyTags : Tags {
   // Note: all have to be of the same type
-  Tags = ["Hello", "Other", "bits", "bobs", "kick"]
-  Name = MyTags.Tags[0] // And indexing them works like you would think
+  SetTags = ["Hello", "Other", "bits", "bobs", "kick"]
+  Name = MyTags.GetTags[0] // And indexing them works like you would think
 }
 
 // You can declare dictionaries like
@@ -93,55 +93,75 @@ MyDictionary : [String : Color] {
 
 When you put this into a parser you'll get the below output (its standidized so you **will** get the below output - though the supplementary comments for each line may differ, though I've not included all the comments to keep it more concise and short);
 
-> NOTE: this resultant IR is from the old version the new version will have a similar format but IR will be a little more complicated.
 ```assembly
 ; This is the resulting bytecode from the file given
 ; This bytecode will be overriden if new bytecode is generated.
-02 4                                                  ; Reserves 4 spaces on the stack.
-03 4                                                  ; Reserves 4 spaces on the register.
-01 "This is a comment"                                ; USER COMMENT
-01 "Construct a new System.Color"                     ; USER COMMENT
-06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-07 0                                                  ; Registers top object to index 0 after popping it off the stack
-12 255                                                ; Pushes long integer 255 onto the stack
-12 64                                                 ; Pushes long integer 64 onto the stack
-12 128                                                ; Pushes long integer 128 onto the stack
-11 0                                                  ; Pushes object in register ID: 0 onto the stack
-04 System.Color::RGB                                  ; Runs the System.Color::RGB function
-01 "Implicit 'array'"                                 ; USER COMMENT
-06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-07 1                                                  ; Registers top object to index 1 after popping it off the stack
-12 1                                                  ; Pushes long integer 1 onto the stack
-13 0.25                                               ; Pushes double 0.25 onto the stack
-13 0.5                                                ; Pushes double 0.5 onto the stack
-01 "You can have trailing commas"                     ; USER COMMENT
-11 1                                                  ; Pushes object in register ID: 1 onto the stack
-04 System.Color::RGB.Normalised                       ; Runs the System.Color::RGB.Normalised function
-06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-07 2                                                  ; Registers top object to index 2 after popping it off the stack
-12 16728192                                           ; Pushes long integer 16728192 onto the stack
-11 2                                                  ; Pushes object in register ID: 2 onto the stack
-04 System.Color::RGB.Hex                              ; Runs the System.Color::RGB.Hex function
-15 "OtherName"                                        ; Pushes string "OtherName" onto the stack
-11 2                                                  ; Pushes object in register ID: 2 onto the stack
-04 System.Color::Name                                 ; Runs the System.Color::Name function
-01 " Multi Line Comment Blocks are great "            ; USER COMMENT
-06 System.Color                                       ; Performs a constructor call on System.Color and pushes the new object onto the stack
-07 3                                                  ; Registers top object to index 3 after popping it off the stack
-11 0                                                  ; Pushes object in register ID: 0 onto the stack
-05 System.Color::R                                    ; Performs a getter call on System.Color::R and pushes the values onto the stack
-11 0                                                  ; Pushes object in register ID: 0 onto the stack
-05 System.Color::G                                    ; Performs a getter call on System.Color::G and pushes the values onto the stack
-11 0                                                  ; Pushes object in register ID: 0 onto the stack
-05 System.Color::B                                    ; Performs a getter call on System.Color::B and pushes the values onto the stack
-11 3                                                  ; Pushes object in register ID: 3 onto the stack
-04 System.Color::RGB                                  ; Runs the System.Color::RGB function
-15 "Copy"                                             ; Pushes string "Copy" onto the stack
-11 3                                                  ; Pushes object in register ID: 3 onto the stack
-04 System.Color::Name                                 ; Runs the System.Color::Name function
-```
+#IR simple {
+  init 4 4
+  ; This is a comment
+  ; Construct a new Color
+  newobj Color Color #Test 0
+  push int 3 255 64 128
+  calln #Test Color RGB 3
 
-I won't go into great detail about the IR, but effectively it is similar to assembly; the `;` is a line comment, each command is seperated by a line and has one parameter (only one). You can place multiple statements on a line by using a `,` to separate them.
+  push flt 3 1 0.25 0.5
+  newobj Color Normalized #TheSame 3
+  quickpush str 1 "Bob"
+  quickcall #Test Color Name 1
+
+  newobj Color Color #Other 0
+  quickpush str 1 "X"
+  quickcall #Other Color Name 1
+
+  quickpush int 1 50
+  quickcall #Test Color R 1
+
+  quickpush int 1 128
+  quickcall #Test Color G 1
+
+  push flt 3 0.95 0.55 0.22
+  newobj Color Normalized #ArrayObject__0 3
+  quickpush str 1 "Other"
+  quickcall #ArrayObject__0 Color Name 1
+
+  newobj Color Color #ArrayObject__1 0
+  push int 3 50 25 125
+  calln #ArrayObject__1 Color RGB 3
+
+  newobj Color Color #ArrayObject__2 0
+  push int 3 50 25 125
+  calln #ArrayObject__2 Color RGB 3
+
+  ; In some cases a `copyobj` call be be done in this case we can just copy the IR
+  newobj Color Color #NewObj 0
+  quickpush str 1 "X"
+  quickcall #NewObj Color Name 1
+
+  quickget str #ArrayObject__0 Color Name
+  quickcall #NewObj Color Name 1
+
+  newobj Tags Tags #MyTags 0
+  pusharray str 5
+  arraycpy str 5 "Hello" "Other" "bits" "bobs" "kick"
+  calln #MyTags Tags SetTags 1
+
+  ; Since declaring the array here will be annoying we can just
+  ; dumbly get the value then later tell its type (not very efficient but its simple)
+  dumbget #MyTags Tags GetTags
+  quickindexarray str 0
+  quickcall #MyTags Tags Name 1
+
+  push flt 3 0.5 1.2 3.5
+  newobj Color Normalized #MyDictionary__Bob 3
+  quickpush str "Bob's Color"
+  quickcall #MyDictionary__Bob Color Name 1
+```
+> Unlike the previous format of DOML the resultant assembly from commands isn't always set in stone the compiler is free to perform some more creative optimisations with data, for example a compiler could support you ensuring that the `SetTags == GetTags` that is no manipulation is occurring there then it could simply just do a;
+```assembly
+quickpush str 1 "Hello"
+quickcall #MyTags Tags Name 1
+```
+Rather than that slower `dumbget` which effectively doesn't perform type safety checks this does mean that your code isn't as safe as it would be with a normal `get` however in this case its fine since we are writing it, the compiler shouldn't typically write code like this; and would probably either use `createtype` and a `getcollection` or a miriad of other things that it could perform that would generally either be more efficient or more safe, however a lot of those aren't very friendly to read so I opted just for the much more readable `dumbget`.
 
 ## Shortened Format
 
@@ -201,6 +221,8 @@ Basically as vertical space often makes things seem longer than horizontal we al
 | Arrays        | \[1, 2, 3, 4\]                        | All have to be of the same type                    |
 | Dictionary    | { { "X" : 2 }, { "Y" : 9 } }          | All keys/values have to be same type (key != value)|
 
+# NOTE: From this point onwards it will mention the old specification
+
 ## Comparison with other formats
 
 > I've re-written this so many times because DOML is so different it almost accomplishes the same goal completely differently. So its hard to compare.
@@ -235,8 +257,6 @@ Anyways, if you have any new changes you may wish to add please ask in the issue
 
 ## Projects using DOML
 
-- Project Splinter-Grim (TBA)
-  - Personal project
 - If you know of any please send a PR adding to this list!
 
 ## Implementations of DOML
