@@ -155,6 +155,7 @@ When you put this into a parser you'll get the below output (its standidized so 
   newobj Color Normalized #MyDictionary__Bob 3
   quickpush str "Bob's Color"
   quickcall #MyDictionary__Bob Color Name 1
+}
 ```
 > Unlike the previous format of DOML the resultant assembly from commands isn't always set in stone the compiler is free to perform some more creative optimisations with data, for example a compiler could support you ensuring that the `SetTags == GetTags` that is no manipulation is occurring there then it could simply just do a;
 ```assembly
