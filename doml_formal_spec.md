@@ -27,7 +27,7 @@ The following are key words and their definitions;
   - [Constructors](#constructors)
   - [Assignments](#assignments)
   - [Arrays](#arrays-of-objects)
-  - [Maps](#maps)
+  - [Maps](#maps-of-objects)
   - [Calls](#calls)
   - [Accessing Values](#accessing-values)
   - [Embed IR](#embed-ir)
@@ -60,6 +60,8 @@ The file ending **must** be `.doml` for *DOML* files, and if a file is purely IR
   - **Must** be case sensitive
   - **Must** be whitespace sensitive
   - **Should** use 2 digit numbers for their opcodes (i.e. 09 instead of 9) since the count right now is 18 (which has an opcode value of 17) and it won't go over 99 in the foreseeable future. This just makes alignment look nice.
+  
+Throughout this document I'll use the word equivalent for IR, word equivalents don't 'have' to be supported and just the opcode variants have to, but it is much harder to show complex IR without the word values.
 
 ## Syntax
 
@@ -78,34 +80,34 @@ The following comment **must** be supported for all *IR* code;
 
 ```Assembly
 ; A
-25 59 48 32 ; B
+push 0 50 ; B
 ```
 
 ### Types
 
 Both *DOML* and *IR* share the same type system, all the following types **must** be implemented.
 
-- Integers (typeID: 0)
+- Integers (type ID: `0`, type name: `Integer`)
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other.
-- Floating Point (typeID: 1)
+- Floating Point (type ID: `1`, type name: `Float`)
   - Double Precision 64 bits (8 bytes), by default
   - IEEE 754
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other and can't occur next to the `.` (if there is one).
-- Decimals (typeID: 2)
+- Decimals (type ID: `2`, type name: `Decimal`)
   - `$` prefix (note the `+` or `-` goes before the `$` prefix i.e. `-$40.95` or `+$59.54`/`$59.54`).
   - Double Precision 64 bit (8 bytes) by default.
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other, also have to occur after the `$` and can't occur next to the `.` (if there is one).
-- String (typeID: 3)
+- String (type ID: `3`, type name: `String`)
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
   - You can insert a unicode character like `\u4e00` (insert unicode character 4e00 which is; 一)
-- Boolean (typeID: 4)
+- Boolean (type ID: `4`, type name: `Bool`)
   - `true` and `false`
   - Thus **can't** have any objects with names that match `true` or `false`.
-- Objects (typeID: 5)
+- Objects (type ID: `5`, type name: `Object`)
   - Represents any creation object for *DOML* and for *IR* refers to a register ID.
   - **Should** be represented as a pointer or similar (i.e. a reference in C#).
   
@@ -113,10 +115,10 @@ Both *DOML* and *IR* share the same type system, all the following types **must*
 
 Both *DOML* and *IR* have support for collections and thus the following types **must** be implemented.
 
-- Dictionaries/Maps
-  - The key type **must** remain constant, and so **must** the value type.
-- Arrays
+- Arrays (collection ID: `0`, collection name: `array`)
   - Array elements **must** all have the same type.
+- Dictionaries/Maps (collection ID: `1`, collection name: `map`)
+  - The key type **must** remain constant, and so **must** the value type.
 
 ### DOML Specifics
 
@@ -286,10 +288,117 @@ pusharray typeID n
 arraycpy typeID n o1 o2 ... on
 ```
 
+Note: if you want array of arrays that are n dimensional and square then you should either use the `setarraynth` command (like `setarraynth typeID x y val`) or the `arraynthcpy` command (like `arraynthcpy typeID N x1 ... xn y1 ... yn z1 ... zn` where N is the row count * height count).  You can also use the compacting method that is (this is required for arrays of maps);
+```assembly
+arraycpy typeID n o1 o2 ... on
+arraycpy typeID n p1 p2 ... pn
+... ; 'N' times
+compact 0 typeID N
+```
+Compact takes a single collection type (in this case the type is array which is `0`) and number of arguments, it then pops those arguments from the stack and places those into the array.  This is the way to build jagged arrays.
+
+And for maps
+```assembly
+pushmap typeID typeID
+quicksetmap typeID typeID n k1 v1 ... kn vn
+pushmap typeID typeID
+quicksetmap typeID typeID n k2_1 v2_1 ... k2_n v2_n
+...; 'N' times
+compact 1 typeID typeID N
+```
+Note: the collection id in this case is `1` and that it takes two type ids
+
+You can also create complex arrays and set them like you would expect
+```assembly
+pushcollection 0 typeID N n1 ... nN
+setcollection 0 typeID N i1 ... in o1
+```
+Note how it is generalized down to a simple push and set, these are less efficient so try not to use them.  Unless they are really required.  The `N` stands for number of dimensions and the i# are indexes, you can view it like `A[i1][i2]...[in]` also note how you have to give the sizes for each dimension.
+
 Accessing arrays are discussed under accessing values.
 
-#### Maps
+#### Maps of objects
+You can define maps of objects like;
+```C
+A : [B : C] {
+  {
+    b : C::E(k1, ..., kn) {
+      X = x1, ..., xn
+    }
+  },
+  ...
+  // And so on
+}
 
+// Accessing elements
+P : C = A[b]
+```
+
+This is extremely simular to how arrays of objects works so I won't redescribe, it should produce NO IR and purely should be for the user to simplify their code.  Note: the key can only a literal type (excluding objects) so like a string, int, float and so on (using the type names specified in the type section).
+
+#### Map Objects
+You can define map objects in code like;
+```C
+// Implicit
+A.B = {
+  {
+    c1 : D::E(p1, ..., pn) {
+      F = f1, ..., fn
+    },
+    ...,
+    c2 : D::G(k1, ..., kn) {
+      F = f2_1, ..., f2_n
+    },
+  }
+}
+
+// Explicit
+A.B : [C : D]
+```
+Note: you can combine the explicit and implicit into one.
+
+##### Resultant IR
+Maps have somewhat similar IR to arrays.
+
+```assembly
+pushmap typeID typeID
+setmap typeID typeID key value
+```
+Setting multiple values can be shorted to
+```assembly
+pushmap typeID typeID
+quicksetmap typeID typeID n k1 v1 ... kn vn
+```
+
+typeID can only contain the types stated in the type section.  If you want a map of arrays (and same for map of maps) then you have to do the following;
+
+For map of maps that are one dimensional
+```assembly
+pushmap typeID typeID
+quicksetmap typeID typeID n k1 v1 ... kn vn
+push typeID new_key1
+pushmap typeID typeID
+push typeID new_key2
+quicksetmap typeID typeID n k2_1 v2_1 ... k2_n v2_n
+... ; 'N' times
+zipmap 1 typeID typeID typeID N
+```
+The above takes a collection type along with the new key type and the old map types that is you can view it like `zipmap 1 [typeID : [typeID : typeID]] N`, note how I had to push elements after each one, if you don't want to do that then you can create a complex map.
+
+Complex maps are actually quite hard to express so there are two commands, the first is through `createtype` to express your map type then later on you can refer to that type by its ID you provide.
+
+That is to create a string map of a int to array of floats map that is `[string : [int : []float]]` you would do;
+```assembly
+createtype 2 1 3 1 1 0 1 0 0 1
+; Or in word mode
+createtype 2 map str 1 map int 1 array 0 float
+```
+That is you create a type and call it ID `2` and that it is a map (1) then you state its a `string` (id 3) and that its value is a collection type (1 for collections, 0 for basic) and its collection type is map (1) then you state the key value is int (0) then you state that the key value is a collection type (1) and it is array (0) and that the arrays value type is not a collection type (0) then you state the type is float (1).  So yeh... it is quite complex to define them but once they are defined you can just use them like any other collection type i.e.;
+```assembly
+pushcollection 2
+setcollection 2 string_value int_value n float_0 ... float_n
+```
+where `n` is the number of items in the array.  As you can see the type system is quite sophisticated, once more try not to abuse collections, and if you can completely avoid them that is preferred.  This is more down to the user then you but still trying to expand the uses of zip map to more types if you can is important.  Doing maps of maps just gets icky and for most users they will just define simple map structures, though maps of arrays are also a bit icky so in the future having a nicer command for them could exist.
 
 #### Accessing Values
 
@@ -305,15 +414,29 @@ Embedding *IR* **should** be supported by a parser to allow for more complex ope
 Currently my favourite thought for embedding IR is;
 
 ```C
-@ Example = System.Color ...
-          .RGB = 4, 55, 255
-// `.RGB = 4, 55, 255` is equivalent to:
-{
-  12 4, 12 55, 12 255
-  11 0
-  04 System.Color::RGB
+Example : Color {
+  RGB = 4, 55, 255
+}
+// `RGB = 4, 55, 255` is equivalent to:
+#IR simple {
+  newobj Color Color #E 0
+  push int 4
+  push int 55
+  push int 255
+  call #E Color RGB 3 ; '0' as in register '0'
 }
 ```
+Noting the use of `simple` which allows me to use words instead of integer values (as well as using `#` for registers allowing alphanumeric) for almost everything, making the code look very readable.  This is covered in the [attributes](#attributes) section.
+
+#### Attributes
+
+You can apply a few attributes to your DOML code to provide various different benefits;
+- `#Version X.Y.Z` you can state your version like `#Version 5` or `#Version 5.1` or even `#Version 5.5.9` compilers are required to check this and make sure that your version will work with the current compiler this will help people upgrade their DOML code if any compatability stuff breaks.  Lowest version allowed is `#Version 0.3` as before that the language was different (in really just terms of syntax and complexity of IR) and very few compilers ever fully supported `0.2`.  Compilers **must** support this.
+- `#IR { ... }` allows you to embed IR, an optional mode is `#IR simple` which allows you to use simple words such as `push` or `int` instead of their value equivalents, noting of course that the extra work to analyse will slow down parsing.  Compilers **should** support this and **could** support simple mode.
+- `#Strict true/false` supplying a true value should require the compiler enforce only **must** and **should** requirements and definitely turn off all **could** or any ones not stated in this document.  Compilers **should** support `#Strict true` and **must** support `#Strict false`.
+
+# NOTE:
+From this point forward the document is outdated!
 
 ### IR Specifics
 
