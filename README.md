@@ -23,7 +23,7 @@ DOML is more like a scripting language then it is like a markup language like JS
 ```C
 // Construct a new Color
 Test : Color {
-  .RGB = 255, 64, 128,
+  RGB = 255, 64, 128,
 }
 
 // Constructors do exist
@@ -213,8 +213,6 @@ Basically as vertical space often makes things seem longer than horizontal we al
 | Arrays        | \[1, 2, 3, 4\]                        | All have to be of the same type                    |
 | Dictionary    | { { "X" : 2 }, { "Y" : 9 } }          | All keys/values have to be same type (key != value)|
 
-# NOTE: From this point onwards it will mention the old specification
-
 ## Comparison with other formats
 
 > I've re-written this so many times because DOML is so different it almost accomplishes the same goal completely differently. So its hard to compare.
@@ -229,23 +227,7 @@ Anyways, if you have any new changes you may wish to add please ask in the issue
 
 ## Roadmap
 
-### Soon (within a month)
-
-- Arrays/Dictionaries [#1]
-  - Done in Version 0.2
-- Constructors [#2]
-  - Done in Version 0.2
-- Standidize current syntax [#3]
-  - Done in Version 0.2
-
-### This Year
-
-- Writing into IR/DOML code from already existing objects
-  - I.e. serialization rather than just de-serialization
-    - Though it would have to be a nice implementation
-- Optimising the required IR code output (though this could become a breaking change)
-  - Such as not requiring a push of the same object multiple times in a row
-    - Probably could just be done by keeping the object at the bottom rather than the top and not popping the object and having the system pop it
+> TODO
 
 ## Projects using DOML
 
@@ -255,19 +237,9 @@ Anyways, if you have any new changes you may wish to add please ask in the issue
 
 If you have an implementation, send a pull request adding to this list. Please note the version tag that your parser supports in your Readme.
 
-## v0.2 Compatible
+## v0.3 Compatible Compilers
 
-- None yet, the v0.1 compatible ones will be updated soon.
-
-## v0.1 Compatible
-
-- [.Net (C#/F#/...)](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net)
-    - Supports reflective and static bindings, supports parsing IR by byte stream in both native and main variants.
-    - Uses .Net Standard 1.3 (thus supporting Core 1.0+, Unity if using 4.6 compiler option, .Net Framework 4.6+, and UWP 10.0)
-        - This is the lowest we can have the standard (since we require certain libraries that exist at 1.3+), thus we are sorry if this doesn't suit your particular project but we can't push back the standard any further.
-- [GO](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-GO)
-  - Progress has recently begun
-  - Buggy but allows reading DOML into IR only
+- None yet, C#, GO, and Zig compatible ones will be updated soon.
 
 ## In Progress
 
