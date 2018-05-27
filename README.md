@@ -2,30 +2,21 @@
 
 > By Braedon Wooding
 > Latest Version 0.3
->> The spec could change and break previous code however this will be avoided (i.e. semi-stable)
+>> The spec could change and break previous code however this will be avoided (i.e. semi-stable), in saying that 0.2 -> 0.3 was a completely breaking set of changes that invalidated all old DOML code, however in saying that I don't intend to do that again :D.
 
 ## Introduction
 
-The single line to sum up DOML is; DOML will create the objects defined, as if you were utilising a scripting language, it has the speed of a compiled language, it parses faster than any alternative due to its simplicity, it will result in actual objects rather than just a map of generalizations, and finally it is easy to write and read.
+DOML is more like a scripting language then it is like a markup language like JSON/XML/TOML/...  Essentially DOML works as such; a base markup like document that looks like a mix between a simpler JSON and something like python/lua then that gets converted into an IR format which looks quite similar to something like a higher level assembly.
 
-Since I want to keep this introduction short (the code examples will act as better guides anyway) I'll just put a TLDR, with some explanation;
+#### The main goals of DOML are;
 
-- DOML (Data Oriented Markup Language) is less of a markup langauge and more of a scripting language
-  - This is cause it defines objects rather than describes them, and when run will actually allocate the memory and the objects (often done through reflected/static bindings).
-  - This is contrasted to JSON/XML/YAML/TOML/... which require you to interpret the resulting map thus making using DOML that much simpler and easier.
-- It parses down to an IR which is simpler and quicker to parse and allows you to effectively 'bake' your configuration scripts, or even pass DOML as a binary stream without using plain text.
-  - The IR isn't meant to be writable by humans though it easily could be, it consists of a series of lines with each line having an opcode value and a parameter.
-  - Parsing IR is about 3.333...x faster (or rather only 30% of the original value)
-    - That is if parsing plain text IR, if you parse the binary stream version it is significantly faster
-    - This is seen [here](https://github.com/DOML-DataOrientedMarkupLanguage/DOML.net#benchmarks)
-  - This IR is transferable to any DOML parser (allowing you to create the produced IR through some web API when you push to your remote, then place the IR along with the repo for compiling + packaging)
-- It's extremely easy to read and write (compared to JSON being easy to read but hard to write, and XML being hard to read/write)
-- Whitespace insensitive (you can remove every single whitespace if wished, there is no required whitespace since there is no keywords)
-- No keywords only symbols
-- Safe from anonymous object creation
-  - This is because the objects created are restricted to what is designated by the user, and a static/reflected binding system is implemented to provide ways to link in with the user's code and functions.
-- No requirement for the user to create any parsing code
-  - For example in C# all you need to do is add the `[DOMLInclude("System")]` attribute (you can replace System with whatever you want the namespace to be called), you can also ignore and customise the names of functions, properties, and fields through attributes.
+- To define objects rather than describe them, that is the objects are created natively rather than requiring some transposation of the 'map'
+- The converted IR is quicker and easier to pass as well as being insanely efficient for a markup language, it has a binary stream format allowing it to be passed efficiently.
+- DOML is aimed to be both simple, easy to read, and easy to write.  It is aimed towards coders rather than towards those who haven't coded before.
+- DOML is 100% whitespace insensitive
+- DOML has no keywords with true and false being the only 'keywords' and they are context sensitive, and you can use `#` to refer to the object over the value i.e. `#true.x` refers to an object you created call true.
+- DOML is completely safe since it relies on static/reflective bindings to build the linkages to your own code and you have the control of what objects can be created and what functions can be run, it disallows anonymous object creation.
+- DOML has no requirement for the user to create parsing code, one of the key aspects of the spec is to emphasise allowing users to link DOML into their code with no parsing functions required often utilising static/reflective bindings, on some systems where this isn't possible it is suggested to try to build static analysers instead of asking users to give function ptrs/equivalent.
 
 ## A quick overview
 
