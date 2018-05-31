@@ -434,9 +434,7 @@ You can apply a few attributes to your DOML code to provide various different be
 - `#Version X.Y.Z` you can state your version like `#Version 5` or `#Version 5.1` or even `#Version 5.5.9` compilers are required to check this and make sure that your version will work with the current compiler this will help people upgrade their DOML code if any compatability stuff breaks.  Lowest version allowed is `#Version 0.3` as before that the language was different (in really just terms of syntax and complexity of IR) and very few compilers ever fully supported `0.2`.  Compilers **must** support this.
 - `#IR { ... }` allows you to embed IR, an optional mode is `#IR simple` which allows you to use simple words such as `push` or `int` instead of their value equivalents, noting of course that the extra work to analyse will slow down parsing.  Compilers **should** support this and **could** support simple mode.
 - `#Strict true/false` supplying a true value should require the compiler enforce only **must** and **should** requirements and definitely turn off all **could** or any ones not stated in this document.  Compilers **should** support `#Strict true` and **must** support `#Strict false`.
-
-# NOTE:
-From this point forward the document is outdated!
+- `#NoKeywords true/false` compilers **must** support `#NoKeywords false` and **should** support `#NoKeywords true` which turns true and false into `#true` and `#false` for all cases except for attribute statements.
 
 ### IR Specifics
 
@@ -453,40 +451,32 @@ From this point forward the document is outdated!
 The Architecture of *IR* has been standardized just to maintain consistency.
 
 - All pushing/popping operations should operate on a stack based model
-  - It **shouldn't** be dynamically allocated since the `makespace` command should be akin to a malloc (i.e. allocating an array).
+  - It **shouldn't** be dynamically allocated since the `init` command initialize the stack and registers.
   - You **must** expose both the current size of the stack and the max size.
-    - The current size represents how many elements have currently been pushed
-    - The max size represents the total space available for elements (equal to `makespace` parameter)
+    - The current size represents how many elements have currently been pushed through `cursize` (pushing size onto stack)
+    - The max size represents the total space available for elements (equal to `init` parameter) through `maxsize` (pushing size onto stack)
   - It **should** *ONLY* allow pushing/popping/peeking operations (though note : hat a peek can be implemented through popping and then push that value as well as return it, though this is inefficient and a more native method should be implemented)
   - You **could** implement it using either a `stack` or a static array with pointer/index
-- `pushoj` and ll register object operations operate on a register based model
-  - It **shouldn't** be dynamically allocated since the `makereg` command should be akin to a malloc.
-  - You **must** expose the current size of the registers which represents the total size available for objects (equal to `makereg` parameter)
+- `call` ooperations operate on a register based model
+  - It **shouldn't** be dynamically allocated since the `init` command grants the size.
+  - You **must** expose the current size of the registers which represents the total size available for objects (equal to `init` parameter) through `regsize` (pushing size onto stack)
   - It **should** *ONLY* allow indexing operations (both to set and to 'unset' - or set to null)
-- All the commands **should** be implemented through a byte value (which is an unsigned 8-bit integer) and **could** be placed into an enum.
+- All the commands **should** be implemented through a byte value (which is defined in this spec as an unsigned 8-bit integer type) and **could** be defined as an enum.
 
 #### Required Commands
 
-The following are all the required commands, as stated previously you **could** add more but should refrain from it since that lends itself to incompatibility. All parsers **need** to support the following.
-> For the sake of readability in the examples I'll include the name of the command rather than the opcode value, some parsers **could** support using the name vs the opcode value, but the official way is the opcode value (included next to the command name).
+The following are all the required commands.  All parsers **need** to support the following.
+> I'll include both the name and opcode but you only **need** to support the opcode the name is optional.
 
-- `nop` (00) does explicitly nothing
-  - *IR*: `nop <any>` i.e. `nop false` (Note: the `false` **should** exist in outputted IR but any value should be able to exist)
-- `comment` (01) same as nop but when emitted will emit the comment (aka it maintains user comments)
-  - *IR*: `; <User Comment>` i.e. `; Create a new color`
-- `makespace` (02) reserves space in stack
+They will be in the format `<command>(opcode) < < parameterName: parameter >, < ... > >`.
+
+- `nop(00)`: does explicitly nothing
+- `init(01) <stacksize: int> <registersize: int>`: sets up the stack and registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
-  - *IR*: `makespace <long>` i.e. `makespace 2`
-- `makereg` (03) reserves space in object registers
-  - The parameter represents the new size not the difference
-  - Objects aren't carried across so effectively a wipe
-  - *IR*: `makereg <long>` i.e. `makereg 2`
-- `set` (04) runs the set function
-  - **could** be maintained on a single 'map' with a prefix 'set' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color`)
-    - the functionality of having the same name for set/get/new and for different types **needs** to exist.
-  - **should** also have a sizeof parameter that refers to how many parameters it pops.
-  - *IR*: `set <Root.Creation::SetFunction>` i.e. `set System.Color::RGB.Hex`
+  - If either size < current size then that initilization doesn't occur.
+- 
+
 - `call` (05) performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
   - **should** also have a sizeof parameter that refers to how many parameters it pushes.
