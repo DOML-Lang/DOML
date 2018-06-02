@@ -293,20 +293,9 @@ Note: if you want array of arrays that are n dimensional and square then you sho
 arraycpy typeID n o1 o2 ... on
 arraycpy typeID n p1 p2 ... pn
 ... ; 'N' times
-compact 0 typeID N
+compact typeID N
 ```
-Compact takes a single collection type (in this case the type is array which is `0`) and number of arguments, it then pops those arguments from the stack and places those into the array.  This is the way to build jagged arrays.
-
-And for maps
-```assembly
-pushmap typeID typeID
-quicksetmap typeID typeID n k1 v1 ... kn vn
-pushmap typeID typeID
-quicksetmap typeID typeID n k2_1 v2_1 ... k2_n v2_n
-...; 'N' times
-compact 1 typeID typeID N
-```
-Note: the collection id in this case is `1` and that it takes two type ids
+Compact takes type and number of arguments, it then pops those arguments from the stack and places those into the array.  This is the way to build jagged arrays.
 
 You can also create complex arrays and set them like you would expect
 ```assembly
@@ -471,17 +460,44 @@ The following are all the required commands.  All parsers **need** to support th
 They will be in the format `<command>(opcode) < < parameterName: parameter >, < ... > >`.
 
 - `nop(00)`: does explicitly nothing
-- `init(01) <stacksize: int> <registersize: int>`: sets up the stack and registers
+- `init(01) <Stack Size: int> <Register Size: int>`: sets up the stack and registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
-- 
+- `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
+- `newobj(10) <Type: Object> <Constructor: Function> <Register: int> <Count: int> < <Parameter: any>, ... >`: creates a new object 
+  - The register refers to what register this object is created in.
+  - The count refers to how many parameters there are.
+  - To default constructor the type and constructor are the same.
+- `push(11) <Type: TypeID> <Count: int> < <Parameter: Type> >`: pushes objects of the same type onto the stack
+  - All parameters have to match the type given.
+- `calln(12) <Register: int> <Type: Object> <Setter: Function> <N: int>`: calls a register object of a certain type along with the number of stack objects given.
+  - If you want to call an object on the stack you have to use `callstack` or simply `regobj` to register an object to a register then you can follow up with a `calln` (which is faster if you are doing multiple calls).
+- `callstack(13) <Type: Object> <Setter: Function> <N: int>`: calls a function of type given on the top object of the stack (doesn't pop it).
+- `pop(14) <N: int>`: pops number of objects off the stack.
+- `getn(15) <Register: int> <Type: Object> <Getter: Function> <ReturnType: TypeID> <N: int>` calls a function and places value onto stack.
+- `getstack(16) <Type: Object> <Getter: Function> <ReturnType: TypeID> <N: int>` sames as `getn` but for the stack.
+- `quickpush(20) <Type: TypeID> <N: int> < <Parameter: Type> >`: Quick push doesn't push to the stack but rather stores it in a smaller 'register' like addressable state.
+  - Often implemented as a long integer (8 bytes) meaning it'll work either as a ptr, an integer, a floating point value, a boolean, a string would be done with a ptr to the instruction data commonly though of course this is an unstable 'string' (will be free'd on completion of program).
+  - The speed improvement comes from avoiding touching the stack and compilers can also convert `quickpush`'es to `pcall`'s either ahead of time or as the code executes.
+  - You can enforce a maximum amount for `n`, which can be set to a number even as low as '1' and still be compliant as typical uses of quickpush are for easy string generation where a ptr is more efficient.
+  - Note: normal calls won't work with quick pushes, only quick calls work.
+- `quickcall(21) <Register: int> <Type: Object> <Setter: Function> <N: int>`: Performs a call with quick push'd variables.
+- `pcall(22) <Register: int> <Type: Object> <Setter: Function> <N: int> < <Obj Type: type> <Parameter: Obj Type> ... >`: performs a call with the parameters in the call, very similar to quick call however isn't typically supported with a wide range of parameters.
+  - Note: this IR code has not been confirmed yet, so one should be hesitant to use it.
+- `quickget(23) <Register: int> <Type: Object> <Setter: Function> <ReturnType: TypeID> <N: int>` very similar in nature to `quickcall` but functions like `getn`
+- `pusharray(31) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
+- `setarray(32) <Type: TypeID> <Index: int> <Obj: Type>`: indexes and sets an object.
+- `getarray(32) <Type: TypeID> <Index: int>`: indexes an object and pushes value onto stack.
+- `arraycpy(33) <Type: TypeID> <Len: int> < <Obj: Type> ... >`: basically builds the array through using a memcpy if it can as in the case of binary streams and in other cases also I'm sure.  Should be more efficient anyway as cuts down number of instructions.
+- `compact(34) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.
+
 
 - `call` (05) performs a function call on the parameter
   - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
   - **should** also have a sizeof parameter that refers to how many parameters it pushes.
   - *IR*: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
-- `new` (06) creates a new object
+- `new` (06) creates a new object`
   - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
   - **should** only ever push one value else it is breaking 'new' convention.
   - *IR*: `new <Root.Creation>` i.e. `new System.Color`
