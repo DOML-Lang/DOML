@@ -297,13 +297,6 @@ compact typeID N
 ```
 Compact takes type and number of arguments, it then pops those arguments from the stack and places those into the array.  This is the way to build jagged arrays.
 
-You can also create complex arrays and set them like you would expect
-```assembly
-pushcollection 0 typeID N n1 ... nN
-setcollection 0 typeID N i1 ... in o1
-```
-Note how it is generalized down to a simple push and set, these are less efficient so try not to use them.  Unless they are really required.  The `N` stands for number of dimensions and the i# are indexes, you can view it like `A[i1][i2]...[in]` also note how you have to give the sizes for each dimension.
-
 Accessing arrays are discussed under accessing values.
 
 #### Maps of objects
@@ -380,9 +373,9 @@ That is to create a string map of a int to array of floats map that is `[string 
 ```assembly
 createtype 2 1 3 1 1 0 1 0 0 1
 ; Or in word mode
-createtype 2 map str 1 map int 1 array 0 float
+createtype 2 3 map str map int array float
 ```
-That is you create a type and call it ID `2` and that it is a map (1) then you state its a `string` (id 3) and that its value is a collection type (1 for collections, 0 for basic) and its collection type is map (1) then you state the key value is int (0) then you state that the key value is a collection type (1) and it is array (0) and that the arrays value type is not a collection type (0) then you state the type is float (1).  So yeh... it is quite complex to define them but once they are defined you can just use them like any other collection type i.e.;
+That is you create a type and call it ID `2` with depth `3` and that it is a map (1) then you state its a `string` (id 3) and its collection type is map (1) then you state the key value is int (0) and the value is array (0) then you state the type is float (1).  So yeh... it is quite complex to define them but once they are defined you can just use them like any other collection type i.e.;
 ```assembly
 pushcollection 2
 setcollection 2 string_value int_value n float_0 ... float_n
@@ -459,12 +452,16 @@ The following are all the required commands.  All parsers **need** to support th
 
 They will be in the format `<command>(opcode) < < parameterName: parameter >, < ... > >`.
 
+> This list may be changed up overtime, so take care!
+
 - `nop(00)`: does explicitly nothing
 - `init(01) <Stack Size: int> <Register Size: int>`: sets up the stack and registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
+- `createtype(03) <ID: int> <Depth: int> < <CollectionID: TypeID> <Type: TypeID> ... >` creates a complex type useful for maps of maps of arrays.
+  - i.e. `createtype 2 3 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[string : [int : []float]]`, and create type would often be expressed like; `createtype 2 3 map str map int array float` (and perhaps even a `true/false`)
 - `newobj(10) <Type: Object> <Constructor: Function> <Register: int> <Count: int> < <Parameter: any>, ... >`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
@@ -486,55 +483,21 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
 - `pcall(22) <Register: int> <Type: Object> <Setter: Function> <N: int> < <Obj Type: type> <Parameter: Obj Type> ... >`: performs a call with the parameters in the call, very similar to quick call however isn't typically supported with a wide range of parameters.
   - Note: this IR code has not been confirmed yet, so one should be hesitant to use it.
 - `quickget(23) <Register: int> <Type: Object> <Setter: Function> <ReturnType: TypeID> <N: int>` very similar in nature to `quickcall` but functions like `getn`
+- `dumbget(34) <Register: int> <Type: Object> <Setter: Function> <N: int>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
 - `pusharray(31) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
 - `setarray(32) <Type: TypeID> <Index: int> <Obj: Type>`: indexes and sets an object.
 - `getarray(32) <Type: TypeID> <Index: int>`: indexes an object and pushes value onto stack.
 - `arraycpy(33) <Type: TypeID> <Len: int> < <Obj: Type> ... >`: basically builds the array through using a memcpy if it can as in the case of binary streams and in other cases also I'm sure.  Should be more efficient anyway as cuts down number of instructions.
 - `compact(34) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.
-
-
-- `call` (05) performs a function call on the parameter
-  - **could** be maintained on a single 'map' with a prefix 'get' (with either a space or a '\_') and with another prefix representing the objects initial creation state (i.e. `System.Color::`)
-  - **should** also have a sizeof parameter that refers to how many parameters it pushes.
-  - *IR*: `call <Root.Creation::GetFunction>` i.e. `call System.Color::RGB.Hex`
-- `new` (06) creates a new object`
-  - **could** be maintained on a single 'map' with a prefix 'new' (with either a space or a '\_')
-  - **should** only ever push one value else it is breaking 'new' convention.
-  - *IR*: `new <Root.Creation>` i.e. `new System.Color`
-- `regobj` (07) registers top object to index given
-  - performs a pop then registers that object to index given
-  - *IR*: `regobj <long>` i.e. `regobj 2` (registers top object to register 2)
-- `unregobj` (08) unregisters object at index
-  - set it to 'null' basically
-  - *IR*: `unregobj <long>` i.e. `unregobj 2` (registers top object to register 2)
-- `copy` (09) copies top object
-  - The parameter represents how many times to copy top object
-  - Effectively a peek + (push x parameter)
-  - *IR*: `copy <long>` i.e. `copy 2`
-- `pop` (10) pops x values off the stack
-  - Useful for when making sure stack has space.
-  - *IR*: `pop <long>` i.e. `pop 3` (pops the top 3 objects off the stack)
-- `pushobj` (11) pushes object from register onto stack
-  - *IR*: `pushobj <long>` i.e. `pushobj 0` (pushes object from register 0)
-- `pushint` (12) pushes integer onto stack
-  - *IR*: `pushint <long>` i.e. `pushint 59`
-- `pushnum` (13) pushes floating point onto stack
-  - *IR*: `pushnum <double>` i.e. `pushnum 32.59`
-- `pushdec` (14) pushes decimal onto stack
-  - *IR*: `pushdec <decimal>` i.e. `pushdec 59.56`
-- `pushstr` (15) pushes string onto stack
-  - *IR*: `pushstr <string>` i.e. `pushstr "Bob"`
-- `pushbool` (16) pushes boolean onto stack
-  - *IR*: `pushbool <bool>` i.e. `pushbool true`
-- `push` (17) pushes the default of type
-  - If no decimal point then integer, if decimal point then floating point, if true/false then bool, if double quote then string.
-    - Therefore won't push decimal/object
-  - *IR*: `push <bool/long/double/string>` i.e. `push true`
-- `pushvec` (18) pushes vector onto stack (static array)
-  - *Note:* changes push commands to index commands from 0 to length of vector.
-    - Decides type after first 'push' therefore a length of 0 is invalid (can't determine type)!
-      - i.e. `pushvec 0` is invalid and not an appropriate value.
-  - *IR*: `pushvec <long>` i.e. `pushvec 10`
+- `pushmap(40) <KeyType: TypeID> <ValueType: TypeID>` pushes a map onto the stack.
+- `pushcollection(41) <CreatedType: TypeID>` pushes a 'createtype' map
+- `setmap(42) <KeyType: TypeID> <ValueType: TypeID> <Key: KeyType> <Value: ValueType>` indexes and sets map for key and value given.
+- `setcollection(43) <CreatedType: TypeID> < <Key: KeyType> ... > <Value: ValueType>` same as `setmap` but for created types.
+- `quicksetmap(44) <KeyType: TypeID> <ValueType: TypeID> <N: int> < <Key: KeyType> <Value: ValueType> >` just applies multiple set maps in a row, more efficient as less IR but doesn't have any benefits like memcpy.
+- `zipmap(45) <Depth: int> < <KeyType: TypeID> ... > <ValueType: TypeID> <Count: int>` can be an efficient way to mass create a complex map, will zip maps together as per your depth, WON'T however allow you to have arrays for either keys or values.
+  - When calling it, it will pop off items, you give it on the stack like the key is the top (or last pushed) and then next is the 'deeper' map i.e. if you have `[int : [string : float]]` you would have the `[string : float]` map at the bottom with the `int` key above each of its corresponding map and if you had `[int : [int : [string : int]]]` you would have the first int key at the top then the second int key with each of its corresponding map i.e. `map01 int1 map02 int2 ... top_int1 map1y inty ... top_int2`.
+- `getmap(46) <KeyType: TypeID> <ValueType: TypeID> <Key: KeyType>` pushes value at key onto stack.  If value doesn't exist for key should push 'NULL'
+- `getcollection(47) <CreatedType: TypeID> < <Key: KeyType> ... >` same as getmap but for created types.
 
 ## Interfacing with DOML
 
