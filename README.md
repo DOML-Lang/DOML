@@ -1,5 +1,7 @@
 # Data Oriented Markup Language - DOML
 
+![DOML](./DOML.png)
+
 > By Braedon Wooding
 > Latest Version 0.3
 >> The spec could change and break previous code however this will be avoided (i.e. semi-stable), in saying that 0.2 -> 0.3 was a completely breaking set of changes that invalidated all old DOML code, however in saying that I don't intend to do that again :D.
