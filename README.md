@@ -1,6 +1,6 @@
 # Data Oriented Markup Language - DOML
 
-![DOML](./DOML.png)
+![DOML](./DOML.png=250x250)
 
 > By Braedon Wooding
 > Latest Version 0.3
