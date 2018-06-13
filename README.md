@@ -75,7 +75,7 @@ MyTags : Tags {
 // Dictionaries within objects can also be created similarly
 MyDictionary : [String : Color] {
   { 
-    "Bob" : Color::Normalzed(0.5, 1.2, 3.5) {
+    "Bob" : Color::Normalized(0.5, 1.2, 3.5) {
       Name = "Bob's Color"
     }
   },
