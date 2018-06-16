@@ -2,7 +2,11 @@
 
 This changelog will contain all the various changes to the grammar and syntax of DOML from v0.1 onwards.
 
-> *Note:* There are a few large steps such as Version 0.1->0.2, this was mainly done when there was very few people working on the project (originally only one) and it was easier then having to constantly release new versions.
+## Version 0.3
+- New syntax, dictionaries highlighted the issues with the old syntax
+- New IR style, more efficient
+- Arrays of top level objects and dictionaries of top level objects (purely syntatical sugar however)
+- Allows indexing of arrays as well
 
 ## Version 0.21
 
