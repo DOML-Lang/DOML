@@ -23,6 +23,7 @@ DOML is more like a scripting language then it is like a markup language like JS
 ## A quick overview
 
 ```C
+# Version 0.3
 // Construct a new Color
 Test : Color {
   RGB = 255, 64, 128,
@@ -82,6 +83,8 @@ MyDictionary : [String : Color] {
     }
   },
 }
+// No need to keep classes around in this example
+# Deinit all
 ```
 
 When you put this into a parser you'll get the below output (its standidized so you **will** get the below output - though the supplementary comments for each line may differ, though I've not included all the comments to keep it more concise and short);
@@ -89,7 +92,7 @@ When you put this into a parser you'll get the below output (its standidized so 
 ```assembly
 ; This is the resulting bytecode from the file given
 ; This bytecode will be overriden if new bytecode is generated.
-#IR simple {
+# IR simple {
   init 4 4
   ; This is a comment
   ; Construct a new Color
@@ -214,6 +217,25 @@ Basically as vertical space often makes things seem longer than horizontal we al
 | ------------- | ------------------------------------- | -------------------------------------------------- |
 | Arrays        | \[1, 2, 3, 4\]                        | All have to be of the same type                    |
 | Dictionary    | { { "X" : 2 }, { "Y" : 9 } }          | All keys/values have to be same type (key != value)|
+
+## Actually using objects created
+
+There are a multitude of ways to use the objects i.e. actually give them to the application, often applications have some kind of 'registerX' function that registers the objects so I'll follow that in this example.
+```C
+// First you could just do it on a base by base basis
+Wizard = Character::New("Wizard the Great") {
+  // If the object is a enum like in this case, you can scope it like (works with some other things too)
+  .Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
+  .Spells : [Spell] = [Fireball(), NewLua(name: "Polymorphism", script: "Polymorphism.Lua")]
+}.Register();
+// Can also put it on its own line
+Wizard.Register();
+// Or do the identical call
+Character.Register(Wizard); // Presuming that it is a static method
+// Or do a 'mass call'
+# MassCall Register
+```
+The mass call is probably the best option for when you have multiple different types as it'll call the correct one per each type.
 
 ## Comparison with other formats
 
