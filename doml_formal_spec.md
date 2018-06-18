@@ -387,6 +387,7 @@ where `n` is the number of items in the array.  As you can see the type system i
 
 #### Calls
 
+> NOTE: do this please, allow function calls to have args
 
 #### Embedding IR
 
