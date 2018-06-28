@@ -166,10 +166,11 @@ The above code generates the following IR;
 ; 1. Standard
 newobj B B # 0
 ; 2. Using a constructor
-newobj B C # n p1 p2 p3 ... pn
+; ... Pushes
+newobj B C # n
 ```
 1) Creates an object of type B calling constructor B (aka the default) at register '#' (at runtime register '#' or -1 means any, but in this case it does mean dependent on previous values).  With 0 parameters.
-2) Creates an object of type B calling constructor C at register '#' (same reason as above).  'n' parameters, with the parameters following it (note: `...` isn't a parameter it is just to show that there are pn parameters).
+2) Creates an object of type B calling constructor C at register '#' (same reason as above).  'n' parameters.
   - note: the labels aren't expressed in IR.
 
 #### Assignments
@@ -463,7 +464,7 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
 - `createtype(03) <ID: int> <Depth: int> < <CollectionID: TypeID> <Type: TypeID> ... >` creates a complex type useful for maps of maps of arrays.
   - i.e. `createtype 2 3 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[string : [int : []float]]`, and create type would often be expressed like; `createtype 2 3 map str map int array float` (and perhaps even a `true/false`)
-- `newobj(10) <Type: Object> <Constructor: Function> <Register: int> <Count: int> < <Parameter: any>, ... >`: creates a new object 
+- `newobj(10) <Type: Object> <Constructor: Function> <Register: int> <Count: int>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
   - To default constructor the type and constructor are the same.
@@ -482,11 +483,12 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
   - Note: normal calls won't work with quick pushes, only quick calls work.
 - `quickcall(21) <Register: int> <Type: Object> <Setter: Function> <N: int>`: Performs a call with quick push'd variables.
 - `pcall(22) <Register: int> <Type: Object> <Setter: Function> <N: int> < <Obj Type: type> <Parameter: Obj Type> ... >`: performs a call with the parameters in the call, very similar to quick call however isn't typically supported with a wide range of parameters.
+- `pnewobj(23) <Type: Object> <Constructor: Function> <Register: int> <Count: int> < <Parameters> >` Allows you to supply parameters in call.  Parameters have to be calculated at runtime so it is less efficient.
   - Note: this IR code has not been confirmed yet, so one should be hesitant to use it.
-- `quickget(23) <Register: int> <Type: Object> <Setter: Function> <ReturnType: TypeID> <N: int>` very similar in nature to `quickcall` but functions like `getn`
-- `dumbget(34) <Register: int> <Type: Object> <Setter: Function> <N: int>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
-- `pusharray(31) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
-- `setarray(32) <Type: TypeID> <Index: int> <Obj: Type>`: indexes and sets an object.
+- `quickget(24) <Register: int> <Type: Object> <Setter: Function> <ReturnType: TypeID> <N: int>` very similar in nature to `quickcall` but functions like `getn`
+- `dumbget(25) <Register: int> <Type: Object> <Setter: Function> <N: int>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
+- `pusharray(30) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
+- `setarray(31) <Type: TypeID> <Index: int> <Obj: Type>`: indexes and sets an object.
 - `getarray(32) <Type: TypeID> <Index: int>`: indexes an object and pushes value onto stack.
 - `arraycpy(33) <Type: TypeID> <Len: int> < <Obj: Type> ... >`: basically builds the array through using a memcpy if it can as in the case of binary streams and in other cases also I'm sure.  Should be more efficient anyway as cuts down number of instructions.
 - `compact(34) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.
