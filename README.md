@@ -95,6 +95,7 @@ When you put this into a parser you'll get the below output (its standidized so 
 # IR simple {
   # IR_obj Color Color
   # IR_obj Tags Tags
+  # IR_ctor Tags Tags::Tags
   # IR_ctor Color Color::Color
   # IR_ctor Normalized Color::Normalized
   # IR_set RGB Color.RGB
