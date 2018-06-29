@@ -87,27 +87,27 @@ push 0 50 ; B
 
 Both *DOML* and *IR* share the same type system, all the following types **must** be implemented.
 
-- Integers (type ID: `0`, type name: `Integer`)
+- Integers (type ID: `0`, type name: `int`)
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other.
-- Floating Point (type ID: `1`, type name: `Float`)
+- Floating Point (type ID: `1`, type name: `str`)
   - Double Precision 64 bits (8 bytes), by default
   - IEEE 754
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other and can't occur next to the `.` (if there is one).
-- Decimals (type ID: `2`, type name: `Decimal`)
+- Decimals (type ID: `2`, type name: `dec`)
   - `$` prefix (note the `+` or `-` goes before the `$` prefix i.e. `-$40.95` or `+$59.54`/`$59.54`).
   - Double Precision 64 bit (8 bytes) by default.
   - Decimal typed, C# shows it well [here](https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=netframework-4.7)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other, also have to occur after the `$` and can't occur next to the `.` (if there is one).
-- String (type ID: `3`, type name: `String`)
+- String (type ID: `3`, type name: `str`)
   - Begins with `"` ends with `"`
   - You can escape quotes only using `\"`
   - You can insert a unicode character like `\u4e00` (insert unicode character 4e00 which is; 一)
-- Boolean (type ID: `4`, type name: `Bool`)
+- Boolean (type ID: `4`, type name: `bool`)
   - `true` and `false`
   - Thus **can't** have any objects with names that match `true` or `false`.
-- Objects (type ID: `5`, type name: `Object`)
+- Objects (type ID: `5`, type name: `obj`)
   - Represents any creation object for *DOML* and for *IR* refers to a register ID.
   - **Should** be represented as a pointer or similar (i.e. a reference in C#).
   
@@ -115,7 +115,7 @@ Both *DOML* and *IR* share the same type system, all the following types **must*
 
 Both *DOML* and *IR* have support for collections and thus the following types **must** be implemented.
 
-- Arrays (collection ID: `0`, collection name: `array`)
+- Arrays (collection ID: `0`, collection name: `vec`)
   - Array elements **must** all have the same type.
 - Dictionaries/Maps (collection ID: `1`, collection name: `map`)
   - The key type **must** remain constant, and so **must** the value type.
@@ -172,6 +172,7 @@ newobj B C # n
 1) Creates an object of type B calling constructor B (aka the default) at register '#' (at runtime register '#' or -1 means any, but in this case it does mean dependent on previous values).  With 0 parameters.
 2) Creates an object of type B calling constructor C at register '#' (same reason as above).  'n' parameters.
   - note: the labels aren't expressed in IR.
+Note: This presumes you have used attributes to define the objects.
 
 #### Assignments
 
@@ -370,11 +371,11 @@ The above takes a collection type along with the new key type and the old map ty
 
 Complex maps are actually quite hard to express so there are two commands, the first is through `createtype` to express your map type then later on you can refer to that type by its ID you provide.
 
-That is to create a string map of a int to array of floats map that is `[string : [int : []float]]` you would do;
+That is to create a string map of a int to array of floats map that is `[str : [int : []flt]]` you would do;
 ```assembly
 createtype 2 1 3 1 1 0 1 0 0 1
 ; Or in word mode
-createtype 2 3 map str map int array float
+createtype 2 3 map str map int vec flt
 ```
 That is you create a type and call it ID `2` with depth `3` and that it is a map (1) then you state its a `string` (id 3) and its collection type is map (1) then you state the key value is int (0) and the value is array (0) then you state the type is float (1).  So yeh... it is quite complex to define them but once they are defined you can just use them like any other collection type i.e.;
 ```assembly
@@ -403,9 +404,9 @@ Example : Color {
 }
 // `RGB = 4, 55, 255` is equivalent to:
 #IR simple {
-  #IR_obj Color @Color;
-  #IR_ctor Color @Color::Color;
-  #IR_set RGB @Color.RGB;
+  #IR_obj Color Color;
+  #IR_ctor Color Color::Color;
+  #IR_set RGB Color.RGB;
   newobj Color Color #Example;
   push int 4, 55, 255;
   call #Example Color RGB; '0' as in register '0'
@@ -420,6 +421,16 @@ You can apply a few attributes to your DOML code to provide various different be
 - `#IR { ... }` allows you to embed IR, an optional mode is `#IR simple` which allows you to use simple words such as `push` or `int` instead of their value equivalents, noting of course that the extra work to analyse will slow down parsing.  Compilers **should** support this and **could** support simple mode.
 - `#Strict true/false` supplying a true value should require the compiler enforce only **must** and **should** requirements and definitely turn off all **could** or any ones not stated in this document.  Compilers **should** support `#Strict true` and **must** support `#Strict false`.
 - `#NoKeywords true/false` compilers **must** support `#NoKeywords false` and **should** support `#NoKeywords true` which turns true and false into `#true` and `#false` for all cases except for attribute statements.
+- `#IR_obj` defines an object for the rest of the scope
+  - If used within a block only defines for that block if used outside a block defined for entire script.
+- `#IR_set` defines a setter for the rest of the scope
+  - If used within a block only defines for that block if used outside a block defined for entire script.
+- `#IR_get` defines a getter for the rest of the scope
+  - If used within a block only defines for that block if used outside a block defined for entire script.
+- `#IR_ctor` defines a constructor for the rest of the scope
+  - If used within a block only defines for that block if used outside a block defined for entire script.
+- `#IR_type` used to define a type.
+  - i.e. `#IR_type 2 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[str : [int : []flt]]`, and create type would often be expressed like; `#IR_type myType map str map int vec flt`
 
 ### IR Specifics
 
@@ -463,35 +474,32 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
-- `createtype(03) <ID: int> < <CollectionID: TypeID> <Type: TypeID> ... >` creates a complex type useful for maps of maps of arrays.
-  - i.e. `createtype 2 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[string : [int : []float]]`, and create type would often be expressed like; `createtype 2 map str map int array float` (and perhaps even a `true/false`)
-- `newobj(10) <Type: Object> <Constructor: Function> <Register: int>`: creates a new object 
+- `newobj(10) <Type: obj> <Constructor: ctor> <Register: int>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
   - To default constructor the type and constructor are the same.
 - `push(11) <Type: TypeID> < <Parameter: Type> >`: pushes objects of the same type onto the stack
   - All parameters have to match the type given.
-- `calln(12) <Register: int> <Type: ObjectID> <Setter: FunctionID>`: calls a register object of a certain type along with the number of stack objects given.
+- `calln(12) <Register: int> <Type: obj> <Setter: set>`: calls a register object of a certain type along with the number of stack objects given.
   - If you want to call an object on the stack you have to use `callstack` or simply `regobj` to register an object to a register then you can follow up with a `calln` (which is faster if you are doing multiple calls).
-- `callstack(13) <Type: Object> <Setter: Function> <N: int>`: calls a function of type given on the top object of the stack (doesn't pop it).
+- `callstack(13) <Type: obj> <Setter: set>`: calls a function of type given on the top object of the stack (doesn't pop it).
 - `pop(14) <N: int>`: pops number of objects off the stack.
-- `getn(15) <Register: int> <Type: Object> <Getter: Function> <ReturnType: TypeID> <N: int>` calls a function and places value onto stack.
-- `getstack(16) <Type: Object> <Getter: Function> <ReturnType: TypeID> <N: int>` sames as `getn` but for the stack.
-- `quickpush(20) <Type: TypeID> <N: int> < <Parameter: Type> >`: Quick push doesn't push to the stack but rather stores it in a smaller 'register' like addressable state.
+- `getn(15) <Register: int> <Type: obj> <Getter: get> <ReturnType: TypeID> <N: int>` calls a function and places value onto stack.
+- `getstack(16) <Type: obj> <Getter: get> <ReturnType: TypeID>` sames as `getn` but for the stack.
+- `quickpush(20) <Type: TypeID> < <Parameter: Type> >`: Quick push doesn't push to the stack but rather stores it in a smaller 'register' like addressable state.
   - Often implemented as a long integer (8 bytes) meaning it'll work either as a ptr, an integer, a floating point value, a boolean, a string would be done with a ptr to the instruction data commonly though of course this is an unstable 'string' (will be free'd on completion of program).
   - The speed improvement comes from avoiding touching the stack and compilers can also convert `quickpush`'es to `pcall`'s either ahead of time or as the code executes.
   - You can enforce a maximum amount for `n`, which can be set to a number even as low as '1' and still be compliant as typical uses of quickpush are for easy string generation where a ptr is more efficient.
   - Note: normal calls won't work with quick pushes, only quick calls work.
-- `quickcall(21) <Register: int> <Type: Object> <Setter: Function> <N: int>`: Performs a call with quick push'd variables.
-- `pcall(22) <Register: int> <Type: Object> <Setter: Function> <N: int> < <Obj Type: type> <Parameter: Obj Type> ... >`: performs a call with the parameters in the call, very similar to quick call however isn't typically supported with a wide range of parameters.
-- `pnewobj(23) <Type: Object> <Constructor: Function> <Register: int> <Count: int> < <Parameters> >` Allows you to supply parameters in call.  Parameters have to be calculated at runtime so it is less efficient.
-  - Note: this IR code has not been confirmed yet, so one should be hesitant to use it.
-- `quickget(24) <Register: int> <Type: Object> <Setter: Function> <ReturnType: TypeID> <N: int>` very similar in nature to `quickcall` but functions like `getn`
-- `dumbget(25) <Register: int> <Type: Object> <Setter: Function> <N: int>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
+- `quickcall(21) <Register: int> <Type: obj> <Setter: set>`: Performs a call with quick push'd variables.
+- `pcall(22) <Register: int> <Type: obj> <Setter: set> < <Parameters> ... >`: performs a call with the parameters in the call
+- `pnewobj(23) <Type: obj> <Constructor: ctor> <Register: int> < <Parameters> >` Allows you to supply parameters in call.  Parameters have to be calculated at runtime so it is less efficient.
+- `quickget(24) <Register: int> <Type: obj> <Getter: get> <ReturnType: TypeID>` very similar in nature to `quickcall` but functions like `getn`
+- `dumbget(25) <Register: int> <Type: obj> <Getter: get>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
 - `pusharray(30) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
-- `setarray(31) <Type: TypeID> <Index: int> <Obj: Type>`: indexes and sets an object.
+- `setarray(31) <Type: TypeID> <Index: int> <Obj>`: indexes and sets an object.
 - `getarray(32) <Type: TypeID> <Index: int>`: indexes an object and pushes value onto stack.
-- `arraycpy(33) <Type: TypeID> <Len: int> < <Obj: Type> ... >`: basically builds the array through using a memcpy if it can as in the case of binary streams and in other cases also I'm sure.  Should be more efficient anyway as cuts down number of instructions.
+- `arraycpy(33) <Type: TypeID> <Len: int> < <Obj> ... >`: basically builds the array through using a memcpy if it can as in the case of binary streams and in other cases also I'm sure.  Should be more efficient anyway as cuts down number of instructions.
 - `compact(34) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.
 - `pushmap(40) <KeyType: TypeID> <ValueType: TypeID>` pushes a map onto the stack.
 - `pushcollection(41) <CreatedType: TypeID>` pushes a 'createtype' map
@@ -499,83 +507,16 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
 - `setcollection(43) <CreatedType: TypeID> < <Key: KeyType> ... > <Value: ValueType>` same as `setmap` but for created types.
 - `quicksetmap(44) <KeyType: TypeID> <ValueType: TypeID> <N: int> < <Key: KeyType> <Value: ValueType> >` just applies multiple set maps in a row, more efficient as less IR but doesn't have any benefits like memcpy.
 - `zipmap(45) <Depth: int> < <KeyType: TypeID> ... > <ValueType: TypeID> <Count: int>` can be an efficient way to mass create a complex map, will zip maps together as per your depth, WON'T however allow you to have arrays for either keys or values.
-  - When calling it, it will pop off items, you give it on the stack like the key is the top (or last pushed) and then next is the 'deeper' map i.e. if you have `[int : [string : float]]` you would have the `[string : float]` map at the bottom with the `int` key above each of its corresponding map and if you had `[int : [int : [string : int]]]` you would have the first int key at the top then the second int key with each of its corresponding map i.e. `map01 int1 map02 int2 ... top_int1 map1y inty ... top_int2`.
+  - When calling it, it will pop off items, you give it on the stack like the key is the top (or last pushed) and then next is the 'deeper' map i.e. if you have `[int : [str : flt]]` you would have the `[str : flt]` map at the bottom with the `int` key above each of its corresponding map and if you had `[int : [int : [str : int]]]` you would have the first int key at the top then the second int key with each of its corresponding map i.e. `map01 int1 map02 int2 ... top_int1 map1y inty ... top_int2`.
 - `getmap(46) <KeyType: TypeID> <ValueType: TypeID> <Key: KeyType>` pushes value at key onto stack.  If value doesn't exist for key should push 'NULL'
 - `getcollection(47) <CreatedType: TypeID> < <Key: KeyType> ... >` same as getmap but for created types.
 
 ## Interfacing with DOML
 
-There are a few ways to interface with *DOML*, each one **must** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them).
+There are a few ways to interface with *DOML*, each one **should** exist in either a static or reflected binding (offering both could allow users to choose one that is more applicable to them).
 
 ### Static vs Reflection Bindings
 
-Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often quite a significant amount slower).
+Both are valid, and both have their advantages (static often requires code generation but is fast whereas reflection is dynamic, doesn't require code generation, requires little to no input from 'users' but is often quite a significant amount slower).  The best is compile time reflection as it requires very little from the user but provides as efficient code as static bindings, languages like Zig, D, and to a certain point Rust.
 
-### Constructors
-
-A constructor call is expected to push a single object, the one the user wanted. It could be a 'new' one or could refer to an already created instance. This means that objects require an empty constructor to then later be initialised. This is utilised in the `new` opcode.
-
-#### Parameters
-
-Parameters can be passed through to a constructor through the following way;
-
-```C
-@ Test = System.Color (255, 125, 243) ...
-// Which is equivalent to
-@ Test = System.Color ...
-       .ctor = 255, 125, 243
-
-// Further more
-@ Test = System.Color->Hex (1, 0.05, 0.39) ...
-// Is equivalent to
-@ Test = System.Color ...
-       .ctor->Hex = 1, 0.05, 0.39
-```
-
-The `.ctor` has to be the first call if used else it can be part of the creation syntax (some may just prefer putting it on its own line). You can use the `->` operator to distinguish between the various constructors, since it won't automatically distinguish (you can choose to have one default one that doesn't require a `->` **only**).  The `(...)` syntax purely exists for those more used to a traditional style and is just a compiler 'trick'. The parameters are pushed before the constructor call, to be used during the constructor. The constructor should be stored as `ctor` and `ctorHex` in static/reflected bindings if done (or user side) rather than storing the function names as traditional constructors (i.e. instead of `public Color(int R, int G, int B);` you would have `public ctor(int R, int G, int B);`) no naming conflicts should arise since all fields/properties and even functions are named as `GetX` with X being the function name.
-
-### Setters
-
-A set call is expected to push *no* objects, and pull one object for every expected parameter and *one* object for the object to call the set on. A type is passed through the `...::` (i.e. in `System.Color::` the type is `System.Color`). This is utilised in the `set` opcode.
-
-### Getters
-
-A getter is expected to push objects, and pull only *one* object (for the object to get from). A type is passed through the `...::` (i.e. in `System.Color::` the type is `System.Color`). This is utilised in the `get` opcode.
-
-### Sizeof
-
-Both getters and setters have a sizeof operation (could be a string to int map for example) that refers to the *maximum* amount of objects they push or pull respectively. This should be handled at compile time making sure that setters get the correct amount of parameters and that there is enough space for getters.
-
-- A value of > 0 refers to an exact amount of parameters
-- 0 refers to no parameters
-- < 0 refers to atleast x parameter/s but no limit (i.e. -1 refers to atleast 1 parameter, -10 refers to atleast 10 parameters)
-
-## Binary Format
-
-No parsers are required to support any of these variants they **could** support them but they are often only useful for embedded systems and short range communication as well as over the web (though that is still quite a large range of uses but its still up to the author).
-
-*DOML* is also very useful for sending data to systems like robotics or other smaller 'computer systems' that rely on a small stack to make them cheaper and more efficient. This could also be used in applications like fitness watches or the like to send data. No parser is required to support this since no parser is required to support parsing bytecode.
-
-Effectively the pro/con list is as such;
-
-- Memory Efficient: Main Variant
-  - Uses significantly less memory then the other methods
-  - For example since numbers are generally small (and often take up less than a byte or two bytes) having a single field can save you 2/3 bytes in memory resulting well in just 1/2 saved bytes per number, this is even larger for floating point values and decimals. Though it does lose one byte per boolean.
-- Simplicity: Native Variant, the removal of a length field for all but strings makes parsing it significantly easier since it doesn't have to pass the length field (which could result in a speed up), also simplifies the data sending procedure.
-- Extremely Large Data: 7 bit length field with 1 bit decider (demonstrated in other variants)
-
-### Main Variant
-
-The stream looks something like this (*note: for simplicity I've not included a footer and a header which you may or may not want to include but it often is case by case*);
-`| OP_CODE (1 Byte) | LENGTH_IN_BYTES (1 Byte) | DATA (n Bytes) |`
-Now while have a length in bytes if we can already figure out how long the data is?  Well simply put it means we can make data shorter and more compact in a lot of scenarios for example if your sending a signed integer < 128 then we can just send it as a single byte of data with the 1 byte opcode and 1 byte length, thus resulting in a 3 byte message instead of a 9 byte message if we sent it as a 64 bit integer without the length. This does allow lengths up to 255 bytes or 2,040 bits for strings and comments which should suffice (though I don't see how one couldn't extend this length to two bytes if required), further more this even supports sending more complex messages over more packages.
-
-Do note: that strings can be quite long and its suggested to replace the `LENGTH_IN_BYTES_` field with a 8 bit sequence (where the 8th bit determines if the sequence continues for another 8 bits, and you append the 7 bits to the last 7 if it does), however for the other types this is unnecessary and is only a **could** include due to the fact that having an integer/bool/floating point/decimal with more than 255 bytes is quite insane and an incredibly niche case whereas having a string of more than 255 bytes is quite possible as 255 bytes is only 127.5 characters (which is in fact only a sentence or two).
-
-### Native Variant
-
-Basically just doesn't use the length field (except for strings where it would use the 8 bit decider length as explained above), and figures out the length per opcode, this requires more complicated parsing but can result in more efficient packing (though it is often more memory efficient to use the main variant as you could compact bytes more).
-
-### Other Variants
-
-- You could have a 7 bit length field with the last 8th bit determining if the length continues (which would be appended to the total 14 bit byte sequence, though of course this could continue again and again).
+If your language doesn't support any introspection (i.e. C/C++) then either static analysis or maybe just a simple parser?  Or perhaps just requiring users to hook in to your program via something like macros.
