@@ -93,6 +93,18 @@ When you put this into a parser you'll get the below output (its standidized so 
 ; This is the resulting bytecode from the file given
 ; This bytecode will be overriden if new bytecode is generated.
 # IR simple {
+  # IR_obj Color Color
+  # IR_obj Tags Tags
+  # IR_ctor Color Color::Color
+  # IR_ctor Normalized Color::Normalized
+  # IR_set RGB Color.RGB
+  # IR_set Name Color.Name
+  # IR_get Name Color.Name
+  # IR_set R Color.R
+  # IR_set G Color.G
+  # IR_set SetTags Tags.SetTags
+  # IR_get GetTags Tags.GetTags
+  # IR_set Name Tags.Name
   init 4 4
   ; This is a comment
   ; Construct a new Color
@@ -153,7 +165,7 @@ When you put this into a parser you'll get the below output (its standidized so 
   quickcall #MyDictionary__Bob Color Name 1
 }
 ```
-> Unlike the previous format of DOML the resultant assembly from commands isn't always set in stone the compiler is free to perform some more creative optimisations with data, for example a compiler could support you ensuring that the `SetTags == GetTags` that is no manipulation is occurring there then it could simply just do a;
+> Unlike the previous format of DOML the resultant assembly from commands isn't always set in stone the compiler is free to perform some more creative optimisations with data, for example a compiler could support you ensuring that the `SetTags == GetTags` (i.e. that is no manipulation is occurring there) then it could simply just do a;
 ```assembly
 quickpush str 1 "Hello"
 quickcall #MyTags Tags Name 1
