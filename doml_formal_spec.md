@@ -403,11 +403,12 @@ Example : Color {
 }
 // `RGB = 4, 55, 255` is equivalent to:
 #IR simple {
-  newobj Color Color #E 0
-  push int 4
-  push int 55
-  push int 255
-  call #E Color RGB 3 ; '0' as in register '0'
+  #IR_obj Color @Color;
+  #IR_ctor Color @Color::Color;
+  #IR_set RGB @Color.RGB;
+  newobj Color Color #Example;
+  push int 4, 55, 255;
+  call #Example Color RGB; '0' as in register '0'
 }
 ```
 Noting the use of `simple` which allows me to use words instead of integer values (as well as using `#` for registers allowing alphanumeric) for almost everything, making the code look very readable.  This is covered in the [attributes](#attributes) section.
@@ -462,15 +463,15 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
-- `createtype(03) <ID: int> <Depth: int> < <CollectionID: TypeID> <Type: TypeID> ... >` creates a complex type useful for maps of maps of arrays.
-  - i.e. `createtype 2 3 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[string : [int : []float]]`, and create type would often be expressed like; `createtype 2 3 map str map int array float` (and perhaps even a `true/false`)
-- `newobj(10) <Type: Object> <Constructor: Function> <Register: int> <Count: int>`: creates a new object 
+- `createtype(03) <ID: int> < <CollectionID: TypeID> <Type: TypeID> ... >` creates a complex type useful for maps of maps of arrays.
+  - i.e. `createtype 2 1 3 1 0 0 1` makes a map of string to another map which is int key to a float array.  This can be read like `[string : [int : []float]]`, and create type would often be expressed like; `createtype 2 map str map int array float` (and perhaps even a `true/false`)
+- `newobj(10) <Type: Object> <Constructor: Function> <Register: int>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
   - To default constructor the type and constructor are the same.
-- `push(11) <Type: TypeID> <Count: int> < <Parameter: Type> >`: pushes objects of the same type onto the stack
+- `push(11) <Type: TypeID> < <Parameter: Type> >`: pushes objects of the same type onto the stack
   - All parameters have to match the type given.
-- `calln(12) <Register: int> <Type: Object> <Setter: Function> <N: int>`: calls a register object of a certain type along with the number of stack objects given.
+- `calln(12) <Register: int> <Type: ObjectID> <Setter: FunctionID>`: calls a register object of a certain type along with the number of stack objects given.
   - If you want to call an object on the stack you have to use `callstack` or simply `regobj` to register an object to a register then you can follow up with a `calln` (which is faster if you are doing multiple calls).
 - `callstack(13) <Type: Object> <Setter: Function> <N: int>`: calls a function of type given on the top object of the stack (doesn't pop it).
 - `pop(14) <N: int>`: pops number of objects off the stack.
