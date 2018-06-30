@@ -91,7 +91,7 @@ Both *DOML* and *IR* share the same type system, all the following types **must*
   - signed 64 bit (8 bytes) by default
   - 0x prefix to make it hexadecimal, 0b prefix to make it binary, and 0o to make it octal (case insensitive)
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other.
-- Floating Point (type ID: `1`, type name: `str`)
+- Floating Point (type ID: `1`, type name: `flt`)
   - Double Precision 64 bits (8 bytes), by default
   - IEEE 754
   - Can have `_` in numbers. Though they can't however occur at the beginning or ending of a number and you can't have two next to each other and can't occur next to the `.` (if there is one).
