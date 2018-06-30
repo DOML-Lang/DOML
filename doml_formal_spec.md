@@ -474,10 +474,9 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
-- `newobj(10) <Type: obj> <Constructor: ctor> <Register: int>`: creates a new object 
+- `newobj(10) <Constructor: ctor> <Register: int>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
-  - To default constructor the type and constructor are the same.
 - `push(11) <Type: TypeID> < <Parameter: Type> >`: pushes objects of the same type onto the stack
   - All parameters have to match the type given.
 - `calln(12) <Register: int> <Type: obj> <Setter: set>`: calls a register object of a certain type along with the number of stack objects given.
