@@ -6,19 +6,9 @@
 > Latest Version 0.3
 >> The spec could change and break previous code however this will be avoided (i.e. semi-stable), in saying that 0.2 -> 0.3 was a completely breaking set of changes that invalidated all old DOML code, however in saying that I don't intend to do that again :D.
 
-## Introduction
+## What is DOML?
 
-DOML is more like a scripting language then it is like a markup language like JSON/XML/TOML/...  Essentially DOML works as such; a base markup like document that looks like a mix between a simpler JSON and something like python/lua then that gets converted into an IR format which looks quite similar to something like a higher level assembly.
-
-#### The main goals of DOML are;
-
-- To define objects rather than describe them, that is the objects are created natively rather than requiring some transposation of the 'map'
-- The converted IR is quicker and easier to pass as well as being insanely efficient for a markup language, it has a binary stream format allowing it to be passed efficiently.
-- DOML is aimed to be both simple, easy to read, and easy to write.  It is aimed towards coders rather than towards those who haven't coded before.
-- DOML is 100% whitespace insensitive
-- DOML has no keywords with true and false being the only 'keywords' and they are context sensitive, and you can use `#` to refer to the object over the value i.e. `#true.x` refers to an object you created call true.
-- DOML is completely safe since it relies on static/reflective bindings to build the linkages to your own code and you have the control of what objects can be created and what functions can be run, it disallows anonymous object creation.
-- DOML has no requirement for the user to create parsing code, one of the key aspects of the spec is to emphasise allowing users to link DOML into their code with no parsing functions required often utilising static/reflective bindings, on some systems where this isn't possible it is suggested to try to build static analysers instead of asking users to give function ptrs/equivalent.
+DOML is simple - it's a markup language akin to JSON/YAML/XML/TOML/.../ with the usability of a language like LUA.
 
 ## A quick overview
 
@@ -87,26 +77,27 @@ MyDictionary : [String : Color] {
 # Deinit all
 ```
 
-When you put this into a parser you'll get the below output (its standidized so you **will** get the below output - though the supplementary comments for each line may differ, though I've not included all the comments to keep it more concise and short);
+When you put this into a parser you'll get something like this; compilers are free to optimise by implementing quick calls and other methods, also almost all compilers suppport adding additional comments to each line to clearly demonstrate what each line does (for when you want to inspect the produced code).  Furthermore the actual IR that you will use won't be in `simple` mode (which is meant mainly for when you want to read/tweak it) since the excessive use of strings is inefficient.
 
 ```assembly
 ; This is the resulting bytecode from the file given
 ; This bytecode will be overriden if new bytecode is generated.
 # IR simple {
-  # IR_obj Color Color
-  # IR_obj Tags Tags
-  # IR_ctor Tags Tags::Tags
-  # IR_ctor Color Color::Color
-  # IR_ctor Normalized Color::Normalized
-  # IR_set RGB Color.RGB
-  # IR_set Name Color.Name
-  # IR_get Name Color.Name
-  # IR_set R Color.R
-  # IR_set G Color.G
-  # IR_set SetTags Tags.SetTags
-  # IR_get GetTags Tags.GetTags
-  # IR_set Name Tags.Name
-  init 4 4
+  ; Sets up a cache
+  # IR_obj Color
+  # IR_obj Tags
+  # IR_ctor Tags::Tags
+  # IR_ctor Color::Color
+  # IR_ctor Color::Normalized
+  # IR_set Color.RGB
+  # IR_set Color.Name
+  # IR_get Color.Name
+  # IR_set Color.R
+  # IR_set Color.G
+  # IR_set Tags.SetTags
+  # IR_get Tags.GetTags
+  # IR_set Tags.Name
+  init 4 4 ; Initialises the stack and registers
   ; This is a comment
   ; Construct a new Color
   newobj Color Color #Test 0
@@ -154,8 +145,7 @@ When you put this into a parser you'll get the below output (its standidized so 
   arraycpy str 5 "Hello" "Other" "bits" "bobs" "kick"
   calln #MyTags Tags SetTags 1
 
-  ; Since declaring the array here will be annoying we can just
-  ; dumbly get the value then later tell its type (not very efficient but its simple)
+  ; This often will be optimised away as dumbget is less safe and less efficient
   dumbget #MyTags Tags GetTags
   quickindexarray str 0
   quickcall #MyTags Tags Name 1
@@ -166,12 +156,6 @@ When you put this into a parser you'll get the below output (its standidized so 
   quickcall #MyDictionary__Bob Color Name 1
 }
 ```
-> Unlike the previous format of DOML the resultant assembly from commands isn't always set in stone the compiler is free to perform some more creative optimisations with data, for example a compiler could support you ensuring that the `SetTags == GetTags` (i.e. that is no manipulation is occurring there) then it could simply just do a;
-```assembly
-quickpush str 1 "Hello"
-quickcall #MyTags Tags Name 1
-```
-Rather than that slower `dumbget` which effectively doesn't perform type safety checks this does mean that your code isn't as safe as it would be with a normal `get` however in this case its fine since we are writing it, the compiler shouldn't typically write code like this; and would probably either use `createtype` and a `getcollection` or a miriad of other things that it could perform that would generally either be more efficient or more safe, however a lot of those aren't very friendly to read so I opted just for the much more readable `dumbget`.
 
 ## Shortened Format
 
@@ -180,33 +164,29 @@ Sometimes the problem with JSON is that it just bulks up so much, so DOML provid
 An initial doml script;
 ```C
 Wizard : Character {
-  .Name = "Wizard the Great",
-  .Stats = {
+  Name = "Wizard the Great",
+  Stats = {
     { Character.Stat.HP : 2 },
     { Character.Stat.AP : 9 },
-    { Character.Stat.ST : 3 },
+    { Character.Stat.ST : 3 }
     // And so on
   },
-  .Spells = [
+  Spells = [
       Spell::Fireball(),
       Spell::New() {
-        .Name = "Polymorphism",
-        .EffectScript = "Polymorphism.lua",
+        Name = "Polymorphism",
+        EffectScript = "Polymorphism.lua"
       }
-  ],
+  ]
 }
 ```
-You could reduce this down to;
+You could reduce this down to (using the idea of scoping variables)
 ```C
-Wizard = Character::New("Wizard the Great") {
-  // If the object is a enum like in this case, you can scope it like (works with some other things too)
-  .Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
-  .Spells : [Spell] = [Fireball(), NewLua(name: "Polymorphism", script: "Polymorphism.Lua")]
+Wizard = Character {
+  Name = "Wizard the Great",
+  Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
+  Spells : [Spell] = [Fireball(), New() { Name = "Polymorphism", EffectScript = "Polymorphism.Lua" }]
 }
-```
-As you can see it is partly due to building a good API and partly due to a mix of other tools even if NewLua didn't exist that spell call would just be;
-```C
-  .Spells : [Spell] = [Fireball(), New() { .Name = "Polymorphism, .EffectScript = "Polymorphism.Lua" }]
 ```
 Basically as vertical space often makes things seem longer than horizontal we allow you to expand horizontally quite nicely.
 
@@ -221,7 +201,7 @@ Basically as vertical space often makes things seem longer than horizontal we al
 | Boolean       | true, false                           | The boolean values                                 |
 | Object        | Test, X, MyColor                      | Refers to a previously defined object              |
 
-> Note: decimals have standidised for `$` though many parsers will probably allow the various other currency signs.
+> Note: decimals have standidized for `$` though many parsers will probably allow the various other currency signs.
 
 ## Collections
 
@@ -236,35 +216,38 @@ Basically as vertical space often makes things seem longer than horizontal we al
 There are a multitude of ways to use the objects i.e. actually give them to the application, often applications have some kind of 'registerX' function that registers the objects so I'll follow that in this example.
 ```C
 // First you could just do it on a base by base basis
-Wizard = Character::New("Wizard the Great") {
-  // If the object is a enum like in this case, you can scope it like (works with some other things too)
-  .Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
-  .Spells : [Spell] = [Fireball(), NewLua(name: "Polymorphism", script: "Polymorphism.Lua")]
+Wizard = Character {
+  Name = "Wizard the Great",
+  Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
+  Spells : [Spell] = [Fireball(), New() { Name = "Polymorphism", EffectScript = "Polymorphism.Lua" }]
 }.Register();
 // Can also put it on its own line
 Wizard.Register();
 // Or do the identical call
 Character.Register(Wizard); // Presuming that it is a static method
-// Or do a 'mass call'
-# MassCall Register
+// Or do a localized call (calls Register on all characters)
+#LocalizedCall Character Register
+// Or just a mass call (calls Register on every object)
+#MassCall Register
 ```
-The mass call is probably the best option for when you have multiple different types as it'll call the correct one per each type.
+
+## Serialization
+
+Compilers will support serialization, however they may just support it through a binary serialization (i.e. an outputted DOML IR file which isn't text readable), all 'official' compilers will however support it in any format both binary, text readable and actual 'DOML' output.
 
 ## Comparison with other formats
 
-> I've re-written this so many times because DOML is so different it almost accomplishes the same goal completely differently. So its hard to compare.
-
-Effectively DOML is simpler and more efficient then the other data formats. XML is hard for machines to parse, JSON is overly complex and hard to write, YAML is way to complex (no parser is fully 1.1 compliant and there are basically no 1.2 parsers at all), and INI isn't standidised. TOML is closer to DOML I think then most other languages (and well it does share 3/4 of the same letters though I would argue TOML's acronym is less informative and serves an 'ego' inflating purpose), they both try to be simple but I feel that TOML falls into the trap of trying to make the current solution as nice as possible where as DOML tries to solve the problem at a new angle, TOML is more akined for small config files where as DOML is nicer for files with multiple objects.
-
-Effectively DOML is a scripting language that is constrained to purely object creation and 'editing', this allows it to be effective at what it does and makes it as low level as possible (IR brings it even closer). I would argue its still a markup language since that's what it does it notates objects. Arguably a different name could have been DOON or Data Oriented Object Notation.
+Hopefully the code examples clearly demonstrate DOML's strengths, it is built for programmers as a de-serializable format to enable them to store data efficiently and effectively; it excels at being readable and simple (it's grammar is extremely simple compared to any language out there), while it is similar to markup languages and similar to scripting languages I feel it sits somewhat in the middle, it is as useful as using LUA for your data management but as simple as JSON.
 
 ## Get Involved
 
-Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing, OR if you are adding your implementation / project to the list all these don't require issues of course). Further more I'll open up a discord chat somewhat soon (and maybe a mailing list), though this discord chat will most likely cover multiple of my projects for my sake.
+Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing, OR if you are adding your implementation / project to the list all these don't require issues of course).
+
+Join the discord here; https://discord.gg/hWyGJVQ.  This will be shared for a series of my various projects not just DOML.
 
 ## Roadmap
 
-> TODO
+- V0.3.
 
 ## Projects using DOML
 
@@ -276,18 +259,26 @@ If you have an implementation, send a pull request adding to this list. Please n
 
 ## v0.3 Compatible Compilers
 
-- None yet, C#, GO, and Zig compatible ones will be updated soon.
+- [C#](https://github.com/DOML-Lang/DOML.net)
+  - Currently is about 65% complete.
 
 ## In Progress
 
-- [C++](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-Cxx)
+- [C++](https://github.com/DOML-Lang/DOML-Cxx)
   - No progress has started (but it will start soon)
+- [Go](https://github.com/DOML-Lang/DOML-GO)
+  - Slightly v0.2 compatible but not v0.3 compatible yet.
 - [Zig]()
-  - Next project
+  - Currently not possible to implement to the standard I require as the language is too 'young' as is evolving too rapidly.
+
+## Do you have a compiler in a language that you want to work on?
+
+- Go ahead!  I won't make any compiler 'official' (i.e. under the DOML-Lang 'company') till it is finished but it can definitely go on this list till then!
 
 ## Editor Support
 
 > These will be missing a considerable amount of features as the language has recently changed, I'll fix them up when I get time.
-- [Notepad++](https://github.com/DOML-DataOrientedMarkupLanguage/Notepad-Syntax)
-- [VIM](https://github.com/DOML-DataOrientedMarkupLanguage/DOML-VIM)
-- EMACS/Sublime Text/VS Code are all in development
+- [Notepad++](https://github.com/DOML-Lang/Notepad-Syntax) OUTDATED
+- [VIM](https://github.com/DOML-Lang/DOML-VIM) OUTDATED
+- [VS-Code](https://github.com/DOML-Lang/vscode-DOML)
+- EMACS/Sublime Text/... are all in development (and will be released soonish)
