@@ -1,0 +1,65 @@
+/* Color is defined as such;
+// C#/C++ hybrid
+[DOMLInclude(.ALL)]
+struct Color {
+  byte r, g, b;
+  
+  void RGB(int r, int g, int b) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+  }
+  
+  [DOMLCustomize(.CONSTRUCTOR)]
+  Color RGB(int r, int g, int b) { this.r = r; this.g = g; this.b = b; }
+  [DOMLCustomize(.CONSTRUCTOR)]
+  Color Normalized(float r, float g, float b) : RGB(r*255, g*255, b*255) {}
+  [DOMLCustomize(.CONSTRUCTOR)]
+  Color Hex(int hex) : RGB((hex & 0xff0000) >> 16, (hex & 0xff00) >> 8, hex & 0xff) {}
+  int Hex() => (r << 16) | (g << 8) | b;
+  (float, float, float) Normalized() => (r / 255, g / 255, b / 255);
+  (byte, byte, byte) RGB() => (r, g, b);
+  [DOMLCustomize(.ASSERT, "eql")]
+  bool Equals(a: Color, b: Color) => a.r == b.r && a.g  == b.g && a.b == b.g;
+}
+*/
+# scoping strong
+# test "Definitions" null {
+  A : Color { r = 1; g = 2; b = 5 }
+  B : Color::() { r = 1; g = 2; b = 5 }
+  C : Color::Color() { r = 1; g = 2; b = 5 }
+  D : Color::RGB(1, 2, 5)
+  E : Color::RGB(r: 1, g: 2, b: 5)
+  F : Color::RGB(b: 5, r: 1, g: 2)
+  
+  # assert eql A B C D E F
+}
+
+# test "Access Members" null {
+  G : Color::RGB(255, 255, 0) 
+  hex := G.Hex
+  result := 0xFFFF00
+  # assert eql hex result
+  # assert eql G.hex 0xFFFF00
+  # assert eql G.r 255
+  # assert eql G.g 255
+  # assert eql G.b 0
+  Grgb : [int] = G.RGB // Force conversion
+  Rrgb := [255, 255, 0]
+  # assert arrayeql 3 Grgb Rrgb
+  # assert eql Grgb Rrgb
+  GNormal : [flt] = G.Normalized
+  RNormal := [1.0, 1.0, 0.0]
+  # assert arrayeql 3 GNormal RNormal
+  # assert eql GNormal RNormal
+}
+
+# deinit
+# clear definitions
+# test "Hex and Normalized" null {
+  A : Color::RGB(255, 255, 0)
+  B : Color::Hex(0xFFFF00)
+  C : Color::Normalized(1.0, 1.0, 0.0)
+  D : Color::Normalized(1, 1, 0)  
+  # assert eql A B C D
+}
