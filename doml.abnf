@@ -1,3 +1,5 @@
+;; NOTE: this grammar is for the old version of DOML and is yet to be updated to the new one.
+
 ;; WARNING: This grammar is W.I.P. and should not be considered as final until stated as final
 
 ;; This is an attempt to define DOML in ABNF according to the grammar defined
