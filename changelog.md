@@ -2,11 +2,30 @@
 
 This changelog will contain all the various changes to the grammar and syntax of DOML from v0.1 onwards.
 
+## Version 0.3.1
+
+- `dumbget` is gone
+- `regobj`, `pnewobj`, `pget`, `deinit` added
+- `getn`, `calln` have been renamed to `get`, and `call` respectively
+- All functions that took a 'n' parameter except for array functions (i.e. `push`, `call`, `get`, ...) all don't take an 'n' parameter anymore, it was superfluous.
+- Types have been removed from `get` as they weren't needed removing the need for `dumbget`
+- Definition support has been proposed and is experimental in the C# compiler but isn't official.
+- New attributes added;
+  - `IR_obj`, `IR_set`, `IR_get`, `IR_ctor` all to allow you to define objects and use them, this is mainly so by default you can't use objects by their name and for non simple mode you define them by a number which is faster to parse (from benchmarking C#).
+    - Possibility of a rollback if deemed not necessary.
+  - `createType` is gone and is replaced with attribute `IR_type` functionality is the same however with the exception that in simple mode you can name the type rather than using an ID.
+- Syntax change to IR when giving a list of arguments that are variadic, must be separated by a comma i.e. `push int 1, 2, 5, 9` this is to increase readability of the IR.
+
 ## Version 0.3
-- New syntax, dictionaries highlighted the issues with the old syntax
-- New IR style, more efficient
+
+- New syntax which is cleaner but still resembles the old one (no need for the `;` at the start nor the `@`)
+- New IR style and commands which are more efficient
 - Arrays of top level objects and dictionaries of top level objects (purely syntatical sugar however)
 - Allows indexing of arrays as well
+
+### Note:
+
+Everything below this was in an old version of DOML that no compiler supports, I'm keeping this history for the sake of it to show how far we have come however.
 
 ## Version 0.21
 
