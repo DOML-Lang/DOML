@@ -161,13 +161,13 @@ The above code generates the following IR;
 
 ```assembly
 ; 1. Standard
-newobj B B # 0
+newobj # B B
 ; 2. Using a constructor
 ; ... Pushes
-newobj B C # n
+newobj # B C
 ```
-1) Creates an object of type B calling constructor B (aka the default) at register '#' (at runtime register '#' or -1 means any, but in this case it does mean dependent on previous values).  With 0 parameters.
-2) Creates an object of type B calling constructor C at register '#' (same reason as above).  'n' parameters.
+1) Creates an object of type B calling constructor B (aka the default) at register '#' (at runtime register '#' or -1 means any, but in this case it does mean dependent on previous values).
+2) Creates an object of type B calling constructor C at register '#' (same reason as above).
   - note: the labels aren't expressed in IR.
 Note: This presumes you have used attributes to define the objects.
 
@@ -191,23 +191,22 @@ A : C() { B = p1 }
 
 ```assembly
 ; 1. Accessing and setting an element
-push typeID 1 p1
-push typeID 1 p2
+push typeID p1
+push typeID p2
 ...
-push typeID 1 pn
-calln # C B n
+push typeID pn
+call # C B
 
 ; 2. Performing a single assignment
-quickpush typeID 1 p1
-quickcall # C B 1
+quickpush typeID p1
+quickcall # C B
 ```
 1) Pushes 'n' objects onto the stack before collapsing 'n' objects to perform call.
+  - If typeID are all the same it can be collapsed into; `push typeID p1, p2, ..., pn`
 2) Performs a smart push on an object then performs a quick call with just one previous object.
 
 A few notes about this structure;
 - The type ID follows the ones stated in the [Types](#types) section, note: this doesn't work for arrays/maps a different command is for that.
-- Furthernote: `quickpush`/`quickcall` are efficient ways to perform small calls on objects, they avoid pushing onto the stack and can short circuit any indirection calls to properties/fields by directly editing the value there; often resulting in a speed increase.  Quickpush can be modified by the user to expand its size as to allow larger functions and can also split up calls like `RGB = p1, p2, p3` into a series of 3 quick pushes and quick calls.
-- push calls can have multiple parameters the `1` just means a single object, but they all have to have the same type.
 
 #### Arrays of Objects
 There are two cases where arrays come into form in DOML; the first is arrays of objects and the second is parameter arrays.
@@ -289,7 +288,9 @@ arraycpy typeID n o1 o2 ... on
 
 Note: if you want array of arrays that are n dimensional and square then you should either use the `setarraynth` command (like `setarraynth typeID x y val`) or the `arraynthcpy` command (like `arraynthcpy typeID N x1 ... xn y1 ... yn z1 ... zn` where N is the row count * height count).  You can also use the compacting method that is (this is required for arrays of maps);
 ```assembly
+pusharray typeID n
 arraycpy typeID n o1 o2 ... on
+pusharray typeID n
 arraycpy typeID n p1 p2 ... pn
 ... ; 'N' times
 compact typeID N
@@ -348,7 +349,7 @@ setmap typeID typeID key value
 Setting multiple values can be shorted to
 ```assembly
 pushmap typeID typeID
-quicksetmap typeID typeID n k1 v1 ... kn vn
+quicksetmap typeID typeID k1 v1, ..., kn vn
 ```
 
 typeID can only contain the types stated in the type section.  If you want a map of arrays (and same for map of maps) then you have to do the following;
@@ -356,28 +357,29 @@ typeID can only contain the types stated in the type section.  If you want a map
 For map of maps that are one dimensional
 ```assembly
 pushmap typeID typeID
-quicksetmap typeID typeID n k1 v1 ... kn vn
+quicksetmap typeID typeID k1 v1, ..., kn vn
 push typeID new_key1
 pushmap typeID typeID
 push typeID new_key2
-quicksetmap typeID typeID n k2_1 v2_1 ... k2_n v2_n
+quicksetmap typeID typeID k2_1 v2_1, ..., k2_n v2_n
 ... ; 'N' times
 zipmap 1 typeID typeID typeID N
 ```
 The above takes a collection type along with the new key type and the old map types that is you can view it like `zipmap 1 [typeID : [typeID : typeID]] N`, note how I had to push elements after each one, if you don't want to do that then you can create a complex map.
 
-Complex maps are actually quite hard to express so there are two commands, the first is through `createtype` to express your map type then later on you can refer to that type by its ID you provide.
+Complex maps are actually quite hard to express so there are two commands, the first is through `#IR_type` to express your map type then later on you can refer to that type by its ID you provide.
 
 That is to create a string map of a int to array of floats map that is `[str : [int : []flt]]` you would do;
 ```assembly
-createtype 2 1 3 1 1 0 1 0 0 1
-; Or in word mode
-createtype 2 3 map str map int vec flt
+#IR_type 2 1 3 1 1 0 1 0 0 1
+; Or in simple mode
+#IR_type myType 3 map str map int vec flt
 ```
 That is you create a type and call it ID `2` with depth `3` and that it is a map (1) then you state its a `string` (id 3) and its collection type is map (1) then you state the key value is int (0) and the value is array (0) then you state the type is float (1).  So yeh... it is quite complex to define them but once they are defined you can just use them like any other collection type i.e.;
 ```assembly
-pushcollection 2
-setcollection 2 string_value int_value n float_0 ... float_n
+; If not in simple would refer to it as '2' as that is what the type was defined as
+pushcollection myType
+setcollection myType string_value int_value n float_0 ... float_n
 ```
 where `n` is the number of items in the array.  As you can see the type system is quite sophisticated, once more try not to abuse collections, and if you can completely avoid them that is preferred.  This is more down to the user then you but still trying to expand the uses of zip map to more types if you can is important.  Doing maps of maps just gets icky and for most users they will just define simple map structures, though maps of arrays are also a bit icky so in the future having a nicer command for them could exist.
 
@@ -390,10 +392,7 @@ where `n` is the number of items in the array.  As you can see the type system i
 
 #### Embedding IR
 
-Embedding *IR* **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).
-> I'm not particularly happy with any suggestion I've seen so far/thought of so this will remain empty till one is approved.
-
-Currently my favourite thought for embedding IR is;
+Embedding *IR* **should** be supported by a parser to allow for more complex operations to occur that aren't supported by the grammar (and in most cases will eventually become supported).  Using IR does NOT void the compatibility promise, however don't expect IR to always be the most efficient in future versions (as better commands may be introduced).
 
 ```C
 Example : Color {
@@ -409,7 +408,7 @@ Example : Color {
   call #Example Color RGB; '0' as in register '0'
 }
 ```
-Noting the use of `simple` which allows me to use words instead of integer values (as well as using `#` for registers allowing alphanumeric) for almost everything, making the code look very readable.  This is covered in the [attributes](#attributes) section.
+Noting the use of `simple` which allows me to use words instead of integer values (as well as using `#` for registers allowing alphanumeric) for almost everything, making the code look very readable, it also allows me to define IR objects/setters/getters/contructors through attributes.  This is covered in the [attributes](#attributes) section.
 
 #### Attributes
 
@@ -435,9 +434,7 @@ You can apply a few attributes to your DOML code to provide various different be
 
 - Whitespace is important in *IR*
 - At least one space has to exist between the *IR* command and the parameter.
-- Each line can only contain one *IR* command and a parameter (i.e. there must be a newline between each 'Instruction')
-  - You can put multiple *IR* commands on the same line using `,`
-- Comments can only appear between 'Instructions' and at the top/bottom, i.e. they can't exist after the *IR* command and before the parameter.
+- At least one newline between commands (i.e. commands can't exist on the same line)
 
 #### Architecture
 
@@ -454,44 +451,39 @@ The Architecture of *IR* has been standardized just to maintain consistency.
   - It **shouldn't** be dynamically allocated since the `init` command grants the size.
   - You **must** expose the current size of the registers which represents the total size available for objects (equal to `init` parameter) through `regsize` (pushing size onto stack)
   - It **should** *ONLY* allow indexing operations (both to set and to 'unset' - or set to null)
-- All the commands **should** be implemented through a byte value (which is defined in this spec as an unsigned 8-bit integer type) and **could** be defined as an enum.
+- All the IR commands **should** be implemented through an 'opcode' enum like structure which has been defined to be from 0-255 or 256 unique values (i.e. an unsigned 8 bit integer or a byte).
 
 #### Required Commands
 
-The following are all the required commands.  All parsers **need** to support the following.
-> I'll include both the name and opcode but you only **need** to support the opcode the name is optional.
+The following are all the required commands.  All parsers **need** to support the following.  The name can only be used in 'simple' mode.
 
-They will be in the format `<command>(opcode) < < parameterName: parameter >, < ... > >`.
+They will be in the format `<command>(opcode) < < parameterName: parameterType >, < ... > >`.
 
-> This list may be changed up overtime, so take care!
-
-- `nop(00)`: does explicitly nothing
+- `nop(00) void`: does explicitly nothing
 - `init(01) <Stack Size: int> <Register Size: int>`: sets up the stack and registers
   - The parameter represents the new size not the difference
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
-- `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
-- `newobj(10) <Type: type> <Constructor: ctor> <Register: int>`: creates a new object 
+- `deinit(02) void` useful in some rare cases, just deinitialize all the memory freeing it.
+- `newobj(10) <Register: int> <Type: type> <Constructor: ctor>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
-- `push(11) <Type: TypeID> < <Parameter: Type> >`: pushes objects of the same type onto the stack
+- `push(11) <Type: typeID> < <Parameter: parameter> >`: pushes objects of the same type onto the stack
   - All parameters have to match the type given.
-- `calln(12) <Register: int> <Type: obj> <Setter: set>`: calls a register object of a certain type along with the number of stack objects given.
+- `call(12) <Register: int> <Type: type> <Function: setter>`: calls a register object of a certain type along with the number of stack objects given.
   - If you want to call an object on the stack you have to use `callstack` or simply `regobj` to register an object to a register then you can follow up with a `calln` (which is faster if you are doing multiple calls).
-- `callstack(13) <Type: obj> <Setter: set>`: calls a function of type given on the top object of the stack (doesn't pop it).
+- `callstack(13) <Type: obj> <Function: setter>`: calls a function of type given on the top object of the stack (doesn't pop it).
 - `pop(14) <N: int>`: pops number of objects off the stack.
-- `getn(15) <Register: int> <Type: obj> <Getter: get> <ReturnType: TypeID> <N: int>` calls a function and places value onto stack.
-- `getstack(16) <Type: obj> <Getter: get> <ReturnType: TypeID>` sames as `getn` but for the stack.
-- `quickpush(20) <Type: TypeID> < <Parameter: Type> >`: Quick push doesn't push to the stack but rather stores it in a smaller 'register' like addressable state.
-  - Often implemented as a long integer (8 bytes) meaning it'll work either as a ptr, an integer, a floating point value, a boolean, a string would be done with a ptr to the instruction data commonly though of course this is an unstable 'string' (will be free'd on completion of program).
-  - The speed improvement comes from avoiding touching the stack and compilers can also convert `quickpush`'es to `pcall`'s either ahead of time or as the code executes.
-  - You can enforce a maximum amount for `n`, which can be set to a number even as low as '1' and still be compliant as typical uses of quickpush are for easy string generation where a ptr is more efficient.
+- `get(15) <Register: int> <Type: type> <Function: getter>` calls a function and places value onto stack.
+- `getstack(16) <Type: type> <Function: getter>` sames as `get` but for the stack.
+- `regobj(17) <Register: int>` registers the top object on the stack to the register value given, pops the object.
+- `quickpush(20) <Type: typeID> < <Parameter: parameter> >`: Quick push doesn't push to the stack but rather stores it in a smaller 'register' like addressable state.
   - Note: normal calls won't work with quick pushes, only quick calls work.
-- `quickcall(21) <Register: int> <Type: obj> <Setter: set>`: Performs a call with quick push'd variables.
-- `pcall(22) <Register: int> <Type: obj> <Setter: set> < <Parameters> ... >`: performs a call with the parameters in the call
-- `pnewobj(23) <Type: obj> <Constructor: ctor> <Register: int> < <Parameters> >` Allows you to supply parameters in call.  Parameters have to be calculated at runtime so it is less efficient.
-- `quickget(24) <Register: int> <Type: obj> <Getter: get> <ReturnType: TypeID>` very similar in nature to `quickcall` but functions like `getn`
-- `dumbget(25) <Register: int> <Type: obj> <Getter: get>` 'dumbly' gets a value by effectively calling it like a void* function (or `Object`), then not implementing the type, meaning that the type is set next time it is in use not in a dumb context.
+- `quickcall(21) <Register: int> <Type: type> <Function: setter>`: Performs a call with quick push'd variables.
+- `pcall(22) <Register: int> <Type: type> <Function: setter> < <Parameters> ... >`: performs a call with the parameters in the call
+- `pnewobj(23) <Type: type> <Constructor: ctor> <Register: int> < <Parameters> >` Allows you to supply parameters in call.  Parameters have to be calculated at runtime so it is less efficient.
+- `pget(24) <Register: int> <Type: type> <Function: getter> < <Parameters> ... >`: same as `pcall` but functions like `get`.
+- `quickget(25) <Register: int> <Type: obj> <Getter: get> <ReturnType: TypeID>` very similar in nature to `quickcall` but functions like `getn`
 - `pusharray(30) <Type: TypeID> <Len: int>`: pushes an array of length and type given onto the stack.
 - `setarray(31) <Type: TypeID> <Index: int> <Obj>`: indexes and sets an object.
 - `getarray(32) <Type: TypeID> <Index: int>`: indexes an object and pushes value onto stack.
