@@ -8,10 +8,7 @@ This is the formal specification document for *DOML*, mainly aimed at developers
 
 The following are key words and their definitions;
 
-- **must**/**need** : For a parser to be clarified as 'mostly compliant' with this specification document, it must/needs to implement this 'feature'
-- **should** : For a parser to be clarified as 'completely compliant' with this specification document, it should implement this 'feature'
-- **could**/**may** : A parser could support these features but they are not relevant to be 'compliant' with this specification document, there are many additional options they could add and I won't even try to list them all.
-- *text* : Refers to any Unicode readable printable character including language characters, and 'emojis' (though a parser **could** warn against the use of using 'emojis') and underscore.
+- **must**/**should**/**may**/**must not**/**should not** : Are defined as [such](https://tools.ietf.org/html/rfc2119).
 - *IR* : Refers to the bytecode produced through the 'compilation' of the *DOML* source file (stands for Intermediate Representation).
 - *DOML* : Refers to Data Oriented Markup Language (this 'language')
 
@@ -474,7 +471,7 @@ They will be in the format `<command>(opcode) < < parameterName: parameter >, < 
   - Objects aren't carried across so effectively a wipe
   - If either size < current size then that initilization doesn't occur.
 - `deinit(02)` useful in some rare cases, just deinitialize all the memory freeing it.
-- `newobj(10) <Constructor: ctor> <Register: int>`: creates a new object 
+- `newobj(10) <Type: type> <Constructor: ctor> <Register: int>`: creates a new object 
   - The register refers to what register this object is created in.
   - The count refers to how many parameters there are.
 - `push(11) <Type: TypeID> < <Parameter: Type> >`: pushes objects of the same type onto the stack
