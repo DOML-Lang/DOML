@@ -249,6 +249,13 @@ Join the discord here; https://discord.gg/hWyGJVQ.
 
 - If you know of any please send a PR adding to this list!
 
+## Version 'Promises'
+
+- Each compiler will support each minor and major version but isn't required to support each patch version.
+  - Compilers can ignore this requirement for versions prior to v0.5 however.
+- At version 1.0.0, compilers are allowed for the only time to break compatability with previous versions as long as there is a stable 'pre 1.0.0' version (and hopefully maintain in terms of bugs for another year or two), this is to give the project a fresh slate and to prevent the slowdown from having to support multiple different versions.
+- Post v1.0.0 compilers have to just support each major version as before but as minor versions aren't allowed to have breaking changes compilers aren't required to support them (since all code written in vX.Y will work in vX.Z providing Z > Y).
+
 ## Implementations of DOML
 
 If you have an implementation, send a pull request adding to this list. Please note the version tag that your parser supports in your Readme.
