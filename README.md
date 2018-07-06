@@ -3,7 +3,7 @@
 <img src="./DOML.png" width="100">
 
 > By Braedon Wooding
-> Latest Version 0.3
+> Latest Version 0.3.1
 >> No promises on breaking changes, I'll try to keep compatibility however and most compilers will support you down grading your version or explicitly not allow it.
 
 ## What is DOML?
