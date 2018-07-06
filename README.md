@@ -3,8 +3,8 @@
 <img src="./DOML.png" width="100">
 
 > By Braedon Wooding
-> Latest Version 0.3
->> The spec could change and break previous code however this will be avoided (i.e. semi-stable), in saying that 0.2 -> 0.3 was a completely breaking set of changes that invalidated all old DOML code, however in saying that I don't intend to do that again :D.
+> Latest Version 0.3.1
+>> No promises on breaking changes, I'll try to keep compatibility however and most compilers will support you down grading your version or explicitly not allow it.
 
 ## What is DOML?
 
@@ -100,66 +100,63 @@ When you put this into a parser you'll get something like this; compilers are fr
   init 4 4 ; Initialises the stack and registers
   ; This is a comment
   ; Construct a new Color
-  newobj Color Color #Test 0
-  push int 3 255 64 128
-  calln #Test Color RGB 3
+  newobj #Test Color Color
+  push int 255, 64, 128
+  call #Test Color RGB
 
-  push flt 3 1 0.25 0.5
-  newobj Color Normalized #TheSame 3
-  quickpush str 1 "Bob"
-  quickcall #Test Color Name 1
+  push flt 1, 0.25, 0.5
+  newobj #TheSame Color Normalized
+  quickpush str "Bob"e
+  quickcall #Test Color Name
 
-  newobj Color Color #Other 0
-  quickpush str 1 "X"
-  quickcall #Other Color Name 1
+  newobj Color Color #Other
+  quickpush str "X"
+  quickcall #Other Color Name
 
-  quickpush int 1 50
-  quickcall #Test Color R 1
+  quickpush int 50
+  quickcall #Test Color R
 
-  quickpush int 1 128
-  quickcall #Test Color G 1
+  quickpush int 128
+  quickcall #Test Color G
 
-  push flt 3 0.95 0.55 0.22
-  newobj Color Normalized #ArrayObject__0 3
-  quickpush str 1 "Other"
-  quickcall #ArrayObject__0 Color Name 1
+  push flt 0.95, 0.55, 0.22
+  newobj #ArrayObject__0 Color Normalized
+  quickpush str "Other"
+  quickcall #ArrayObject__0 Color Name
 
-  newobj Color Color #ArrayObject__1 0
-  push int 3 50 25 125
-  calln #ArrayObject__1 Color RGB 3
+  newobj #ArrayObject__1 Color Color
+  push int 50, 25, 125
+  call #ArrayObject__1 Color RGB
 
-  newobj Color Color #ArrayObject__2 0
-  push int 3 50 25 125
-  calln #ArrayObject__2 Color RGB 3
+  newobj #ArrayObject__2 Color Color
+  push int 50, 25, 125
+  call #ArrayObject__2 Color RGB
 
-  ; In some cases a `copyobj` call be be done in this case we can just copy the IR
-  newobj Color Color #NewObj 0
-  quickpush str 1 "X"
-  quickcall #NewObj Color Name 1
+  copyobj Color Color #NewObj
 
-  quickget str #ArrayObject__0 Color Name
-  quickcall #NewObj Color Name 1
+  quickget #ArrayObject__0 str Color Name
+  quickcall #NewObj Color Name
 
-  newobj Tags Tags #MyTags 0
+  newobj Tags Tags #MyTags
   pusharray str 5
-  arraycpy str 5 "Hello" "Other" "bits" "bobs" "kick"
-  calln #MyTags Tags SetTags 1
+  arraycpy str "Hello", "Other", "bits", "bobs", "kick"
+  call #MyTags Tags SetTags
 
-  ; This often will be optimised away as dumbget is less safe and less efficient
-  dumbget #MyTags Tags GetTags
+  get #MyTags Tags GetTags
   quickindexarray str 0
-  quickcall #MyTags Tags Name 1
+  pop 1 ; ^^ won't be popped up this, the array will
+  quickcall #MyTags Tags Name
 
-  push flt 3 0.5 1.2 3.5
-  newobj Color Normalized #MyDictionary__Bob 3
+  push flt 0.5 1.2 3.5
+  newobj #MyDictionary__Bob 3 Color Normalized
   quickpush str "Bob's Color"
-  quickcall #MyDictionary__Bob Color Name 1
+  quickcall #MyDictionary__Bob Color Name
 }
 ```
 
 ## Shortened Format
 
-Sometimes the problem with JSON is that it just bulks up so much, so DOML provides a few ways to shorten your scripts;
+Sometimes the problem with JSON is that it just bulks up so much and looks very noisy, so DOML provides a few ways to shorten your scripts;
 
 An initial doml script;
 ```C
@@ -182,13 +179,12 @@ Wizard : Character {
 ```
 You could reduce this down to (using the idea of scoping variables)
 ```C
-Wizard = Character {
+Wizard : Character {
   Name = "Wizard the Great",
   Stats : [Character.Stat : Int] = { HP : 4 }, { AP : 9 }, { ST : 3 }
   Spells : [Spell] = [Fireball(), New() { Name = "Polymorphism", EffectScript = "Polymorphism.Lua" }]
 }
 ```
-Basically as vertical space often makes things seem longer than horizontal we allow you to expand horizontally quite nicely.
 
 ## Types
 
@@ -243,7 +239,7 @@ Hopefully the code examples clearly demonstrate DOML's strengths, it is built fo
 
 Anyways, if you have any new changes you may wish to add please ask in the issues!  I will be more cautious to accept PRs if the changes aren't talked about in an issue (though the obvious exception is if you are fixing up typos/errors or if its a super small thing, OR if you are adding your implementation / project to the list all these don't require issues of course).
 
-Join the discord here; https://discord.gg/hWyGJVQ.  This will be shared for a series of my various projects not just DOML.
+Join the discord here; https://discord.gg/hWyGJVQ.
 
 ## Roadmap
 
@@ -253,6 +249,13 @@ Join the discord here; https://discord.gg/hWyGJVQ.  This will be shared for a se
 
 - If you know of any please send a PR adding to this list!
 
+## Version 'Promises'
+
+- Each compiler will support each minor and major version but isn't required to support each patch version.
+  - Compilers can ignore this requirement for versions prior to v0.5 however.
+- At version 1.0.0, compilers are allowed for the only time to break compatability with previous versions as long as there is a stable 'pre 1.0.0' version (and hopefully maintain in terms of bugs for another year or two), this is to give the project a fresh slate and to prevent the slowdown from having to support multiple different versions.
+- Post v1.0.0 compilers have to just support each major version as before but as minor versions aren't allowed to have breaking changes compilers aren't required to support them (since all code written in vX.Y will work in vX.Z providing Z > Y).
+
 ## Implementations of DOML
 
 If you have an implementation, send a pull request adding to this list. Please note the version tag that your parser supports in your Readme.
@@ -260,7 +263,7 @@ If you have an implementation, send a pull request adding to this list. Please n
 ## v0.3 Compatible Compilers
 
 - [C#](https://github.com/DOML-Lang/DOML.net)
-  - Currently is about 65% complete.
+  - Currently is about 3/4 complete.
 
 ## In Progress
 
@@ -269,11 +272,11 @@ If you have an implementation, send a pull request adding to this list. Please n
 - [Go](https://github.com/DOML-Lang/DOML-GO)
   - Slightly v0.2 compatible but not v0.3 compatible yet.
 - [Zig]()
-  - Currently not possible to implement to the standard I require as the language is too 'young' as is evolving too rapidly.
+  - Way too many compiler bugs in the way and the language is just not mature enough as it is changing too rapidly.
 
 ## Do you have a compiler in a language that you want to work on?
 
-- Go ahead!  I won't make any compiler 'official' (i.e. under the DOML-Lang 'company') till it is finished but it can definitely go on this list till then!
+- Go ahead!  I won't make any compiler 'official' (i.e. under the DOML-Lang 'company') till it is finished but it can definitely go on this list till then!  I would like to have most of the compilers under the DOML-Lang banner as it gives them an air of officiality and we can ensure that they are supported for a while.
 
 ## Editor Support
 
