@@ -313,15 +313,13 @@ You can define map objects in code like;
 ```C
 // Implicit
 A.B = {
-  {
-    c1 : D::E(p1, ..., pn) {
-      F = f1, ..., fn
-    },
-    ...,
-    c2 : D::G(k1, ..., kn) {
-      F = f2_1, ..., f2_n
-    },
-  }
+  c1 : D::E(p1, ..., pn) {
+    F = f1, ..., fn
+  },
+  ...,
+  c2 : D::G(k1, ..., kn) {
+    F = f2_1, ..., f2_n
+  },
 }
 
 // Explicit
