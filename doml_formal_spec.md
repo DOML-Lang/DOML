@@ -26,7 +26,6 @@ The following are key words and their definitions;
   - [Arrays](#arrays-of-objects)
   - [Maps](#maps-of-objects)
   - [Calls](#calls)
-  - [Accessing Values](#accessing-values)
   - [Embed IR](#embed-ir)
 - [IR Specifics](#ir-specifics)
   - [Whitespace](#whitespace)
@@ -34,15 +33,6 @@ The following are key words and their definitions;
   - [Required Commands](#required-commands)
 - [Interfacing DOML](#interfacing-doml)
   - [Static vs Reflection Bindings](#static-vs-reflection-bindings)
-  - [Constructors](#constructors)
-    - [Parameters](#parameters)
-  - [Setters](#setters)
-  - [Getters](#getters)
-  - [Sizeof](#sizeof)
-- [Binary Format](#binary-format)
-  - [Main Variant](#main-variant)
-  - [Native Variant](#native-variant)
-  - [Other Variants](#other-variants)
 
 ## File Format
 
@@ -383,12 +373,36 @@ setcollection myType string_value int_value n float_0 ... float_n
 ```
 where `n` is the number of items in the array.  As you can see the type system is quite sophisticated, once more try not to abuse collections, and if you can completely avoid them that is preferred.  This is more down to the user then you but still trying to expand the uses of zip map to more types if you can is important.  Doing maps of maps just gets icky and for most users they will just define simple map structures, though maps of arrays are also a bit icky so in the future having a nicer command for them could exist.
 
-#### Accessing Values
-
-
 #### Calls
 
-> NOTE: do this please, allow function calls to have args
+Take the following example;
+```C
+A : B::C() {
+  d = p1
+}
+
+D : B {
+  // 1
+  d = A.d
+}
+
+// 2
+D.d(A.d())
+
+// 3
+D.d = A.d
+```
+
+There are a few function call 'types' above and they effectively all do the same thing.  1, 2, and 3 do the exact same thing and are semantically the same, we allow you to shorten things as to make them nicer in terms of a call.
+
+###### Resultant IR
+
+The IR resulting from 1, 2, and 3 is;
+```assembly
+get #A B d
+call #D B d
+```
+You could use a quick version here of course, or whatever optimisations lead to the same 'result'.
 
 #### Embedding IR
 
