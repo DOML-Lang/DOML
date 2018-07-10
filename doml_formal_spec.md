@@ -519,9 +519,9 @@ They will be in the format `<command>(opcode) < < parameterName: parameterType >
 - `setindexstack(31) <Type: TypeID>`: indexes and sets the top object with the keys following it and the value after that, all on the stack.
 - `quicksetindex(32) <Type: TypeID> <Indexes>`: indexes an object and sets it to the value on the quick index.
 - `getindex(33) <Type: TypeID> <Indexes>`: indexes an object and pushes value onto stack.
-- `quickgetindex(33) <Type: TypeID> <Indexes>`: indexes an object and pushes value onto quick index.
-- `quickcpy(34) <Type: TypeID> <Lengths: int[]> < <Obj> ... >` Allows you to build arrays and maps through a single call, still requires a push prior to this however.
-- `compact(35) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.  Will also compact maps.
+- `quickgetindex(34) <Type: TypeID> <Indexes>`: indexes an object and pushes value onto quick index.
+- `quickcpy(35) <Type: TypeID> <Lengths: int[]> < <Obj> ... >` Allows you to build arrays and maps through a single call, still requires a push prior to this however.
+- `compact(36) <Type: TypeID> <N Dimension: int>` compacts above arrays into dimensions given, i.e. if you give it two arrays will build a 2D array, the order is from top down not down up.  Will also compact maps.
   - When calling it, it will pop off items, you give it on the stack like the key is the top (or last pushed) and then next is the 'deeper' map i.e. if you have `[int : [str : flt]]` you would have the `[str : flt]` map at the bottom with the `int` key above each of its corresponding map and if you had `[int : [int : [str : int]]]` you would have the first int key at the top then the second int key with each of its corresponding map i.e. `map01 int1 map02 int2 ... top_int1 map1y inty ... top_int2`.
 
 #### IR_obj/set/get/ctor
