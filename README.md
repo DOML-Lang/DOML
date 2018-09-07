@@ -17,19 +17,22 @@ DOML is simple - it's a markup language akin to JSON/YAML/XML/TOML/.../ with the
 ```C
 # Version 0.3
 // Construct a new Color
-Test : Color {
+Test = Color() {
   RGB = 255, 64, 128,
 }
 
 // Constructors do exist
 // the parameter names are purely for your own merit, they will check if its possible however (will be possible on most systems)
-TheSame : Color::Normalized(r: 1, g: 0.25, b: 0.5) {
+TheSame = Color::Normalized(r: 1, g: 0.25, b: 0.5) {
   Name = "Bob"
 }
 
 // You can also just declare an object without scoping it
-Other : Color
+Other = Color()
 Other.Name = "X"
+
+// You can declare random other values
+MyValue = 2
 
 // You can also edit the original Test at any point EITHER by doing
 Test.R = 50
@@ -39,7 +42,7 @@ Test.{
 }
 
 // You can declare arrays like
-ArrayObject : []Color {
+ArrayObject = []Color {
   ::Normalized(0.95, 0.55, 0.22){
     Name = "Other", // Trailing commas are always allowed
   },
@@ -54,13 +57,13 @@ ArrayObject : []Color {
 }
 
 // You can also copy objects by doing
-NewObj : Color = Other
+NewObj = Other
 
 // Or can do something like
 NewObj.Name = ArrayObject[0].Name
 
 // You can also declare arrays inside object definitions
-MyTags : Tags {
+MyTags = Tags() {
   // Note: all have to be of the same type
   SetTags = ["Hello", "Other", "bits", "bobs", "kick"]
   Name = MyTags.GetTags[0] // And indexing them works like you would think
@@ -68,7 +71,7 @@ MyTags : Tags {
 
 // You can declare dictionaries like
 // Dictionaries within objects can also be created similarly
-MyDictionary : [String : Color] {
+MyDictionary = [String : Color] {
   { 
     "Bob" : Color::Normalized(0.5, 1.2, 3.5) {
       Name = "Bob's Color"
